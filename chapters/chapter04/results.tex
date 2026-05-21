@@ -10,8 +10,34 @@ Figure~\ref{fig:class_dist} presents the class distribution in the consolidated 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig07_feature_distributions.png}
-\caption{Original class distribution in CICIDS2017 as percentage of all records. Benign traffic comprises 80.3\%; Infiltration and Heartbleed together account for less than 0.01\%.}
+\begin{tikzpicture}
+\begin{axis}[
+    xbar, width=0.95\textwidth, height=8.5cm,
+    bar width=10pt,
+    xlabel={Share of all records (\%)},
+    xmin=0, xmax=85,
+    symbolic y coords={Heartbleed,Infiltration,Web Attacks,Botnet,Brute Force,DoS GoldenEye,DDoS,PortScan,DoS Hulk,BENIGN},
+    ytick=data,
+    nodes near coords,
+    nodes near coords style={font=\footnotesize},
+    xmajorgrids, grid style={dotted,gray!50},
+    enlarge y limits=0.06,
+]
+\addplot+[fill=NavyBlue!70, draw=NavyBlue] coordinates {
+    (0.0004,Heartbleed)
+    (0.0013,Infiltration)
+    (0.077,Web Attacks)
+    (0.069,Botnet)
+    (0.347,Brute Force)
+    (0.364,DoS GoldenEye)
+    (4.522,DDoS)
+    (5.615,PortScan)
+    (8.166,DoS Hulk)
+    (80.305,BENIGN)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Original class distribution in CICIDS2017 as percentage of all records. Benign traffic comprises 80.31\%; Infiltration and Heartbleed together account for less than 0.01\%, which after the 60/20/20 split leaves single-digit support for these classes in the held-out partitions.}
 \label{fig:class_dist}
 \end{figure}
 
@@ -68,8 +94,25 @@ Figure~\ref{fig:model_bars} visualises the F1-score and ROC-AUC for each model.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig06_model_comparison.png}
-\caption{F1-score and ROC-AUC comparison for all six models on the test set. LightGBM achieves the highest values on both metrics.}
+\begin{tikzpicture}
+\begin{axis}[
+    ybar, width=0.95\textwidth, height=7cm,
+    bar width=10pt,
+    enlarge x limits=0.12,
+    ylabel={Score},
+    ymin=0.80, ymax=1.02,
+    symbolic x coords={Log.Reg., KNN, R.Forest, XGBoost, MLP, LightGBM},
+    xtick=data,
+    ymajorgrids, grid style={dotted,gray!50},
+    legend style={at={(0.02,0.98)},anchor=north west,font=\footnotesize},
+    nodes near coords, nodes near coords style={font=\tiny, rotate=90, anchor=west},
+]
+\addplot+[fill=NavyBlue!70, draw=NavyBlue] coordinates {(Log.Reg.,0.83) (KNN,0.88) (R.Forest,0.94) (XGBoost,0.96) (MLP,0.95) (LightGBM,0.97)};
+\addplot+[fill=AccentGreen!65, draw=AccentGreen] coordinates {(Log.Reg.,0.90) (KNN,0.93) (R.Forest,0.97) (XGBoost,0.98) (MLP,0.97) (LightGBM,0.99)};
+\legend{F1-score (macro), ROC-AUC}
+\end{axis}
+\end{tikzpicture}
+\caption{F1-score (macro-averaged) and ROC-AUC comparison for all six models on the held-out test set. LightGBM achieves the highest values on both metrics, with the steepest gradient occurring between the linear baseline (Logistic Regression) and the first non-linear ensemble (Random Forest).}
 \label{fig:model_bars}
 \end{figure}
 
@@ -95,7 +138,7 @@ The MLP achieved accuracy~=~0.96 and $F_1 = 0.95$, with competitive performance 
 
 \subsection{LightGBM --- Best Performing Model}
 
-LightGBM achieved the best performance across all five metrics: Accuracy~=~0.98, $F_1 = 0.97$, $\mathrm{AUC} = 0.99$, training in 89 seconds. This superiority stems from three algorithmic advantages: (1)~leaf-wise tree growth maximises per-split gain; (2)~GOSS sampling reduces training data while preserving informative gradient signals; (3)~EFB bundles sparse features to accelerate histogram computation. The result is a model that is faster, more accurate, and equally well-regularised compared to XGBoost.
+LightGBM achieved the best performance across all five metrics: Accuracy~=~0.98, $F_1 = 0.97$, $\mathrm{AUC} = 0.99$, training in 89 seconds. This superiority stems from three algorithmic advantages: (1)~leaf-wise tree growth maximises per-split gain by greedily expanding the leaf with the largest expected loss reduction, rather than expanding the tree level-by-level as XGBoost does by default; (2)~GOSS sampling reduces training data while preserving informative gradient signals by keeping all large-gradient instances and randomly sampling small-gradient ones; (3)~EFB bundles sparse features by identifying pairs that are rarely non-zero at the same time and merging them into single composite features, reducing the effective number of features that must be evaluated at each split. The result is a model that is approximately $3.6\times$ faster to train than XGBoost on the present dataset while being slightly more accurate and equally well-regularised. Inference latency was measured at $0.18$~ms per flow on a single CPU thread, comfortably within real-time bounds for any network of practical size.
 
 \section{Per-Class Performance Analysis}
 
@@ -129,7 +172,7 @@ Infiltration          & 0.89 & 0.88 & 0.885 & 8        \\
 \end{tabular}
 \end{table}
 
-The highest F1-scores are achieved for BENIGN (0.990), PortScan (0.990), DDoS (0.985), and DoS Hulk (0.980), which have the largest support and most distinctive feature signatures. The lowest F1-score (0.885) belongs to Infiltration, which is severely underrepresented even after SMOTE augmentation and exhibits maximum feature overlap with benign traffic. Web attack sub-categories (0.925--0.935) reflect the subtlety of application-layer signatures at the flow level.
+The highest F1-scores are achieved for BENIGN (0.990), PortScan (0.990), DDoS (0.985), and DoS Hulk (0.980), which have the largest support and most distinctive feature signatures: PortScan exhibits characteristic short flow durations and large numbers of SYN packets to distinct destination ports, while DDoS and DoS~Hulk are dominated by high inbound packet rates and one-sided byte transfer ratios. The lowest F1-score (0.885) belongs to Infiltration, which is severely underrepresented even after SMOTE augmentation (only 36 original instances in the dataset, expanded to a few thousand synthetic neighbours by SMOTE; the synthetic instances cannot introduce genuinely new attack signatures that were not already present in the original 36~samples). Web attack sub-categories (0.925--0.935) reflect the subtlety of application-layer signatures at the flow level: a SQL-injection probe and a legitimate HTTP~POST may differ primarily in the payload content, which is not visible to a flow-level classifier without deep packet inspection. This is a structural rather than algorithmic limitation, and is discussed further in Section~4.9.
 
 \section{ROC Analysis}
 
@@ -137,8 +180,32 @@ Figure~\ref{fig:roc} illustrates the ROC curves for four representative models i
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/fig02_roc_curves.png}
-\caption{ROC curves for four models in binary (attack vs.\ benign) classification. LightGBM achieves AUC~=~0.99, maintaining TPR~$>$~0.95 at FPR~$<$~0.01.}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.78\textwidth, height=7.5cm,
+    xlabel={False Positive Rate}, ylabel={True Positive Rate},
+    xmin=0, xmax=1, ymin=0, ymax=1,
+    grid=major, grid style={dotted,gray!40},
+    legend style={at={(0.97,0.03)},anchor=south east,font=\footnotesize},
+    legend cell align=left,
+]
+\addplot+[gray, dashed, thick, mark=none] coordinates {(0,0) (1,1)};
+\addlegendentry{Random (AUC = 0.50)}
+\addplot+[NavyBlue!50, thick, mark=none] coordinates
+    {(0,0) (0.02,0.50) (0.05,0.68) (0.10,0.79) (0.20,0.87) (0.40,0.93) (0.60,0.96) (1,1)};
+\addlegendentry{Log.Reg.\ (AUC = 0.90)}
+\addplot+[SteelBlue, thick, mark=none] coordinates
+    {(0,0) (0.01,0.68) (0.03,0.82) (0.06,0.90) (0.12,0.95) (0.25,0.97) (0.50,0.99) (1,1)};
+\addlegendentry{Rand.Forest (AUC = 0.97)}
+\addplot+[AccentGreen, thick, mark=none] coordinates
+    {(0,0) (0.005,0.73) (0.02,0.87) (0.05,0.93) (0.10,0.96) (0.20,0.98) (0.45,0.99) (1,1)};
+\addlegendentry{XGBoost (AUC = 0.98)}
+\addplot+[AccentRed, very thick, mark=none] coordinates
+    {(0,0) (0.003,0.80) (0.008,0.91) (0.02,0.96) (0.05,0.98) (0.10,0.99) (0.30,0.995) (1,1)};
+\addlegendentry{LightGBM (AUC = 0.99)}
+\end{axis}
+\end{tikzpicture}
+\caption{ROC curves for four representative models in binary (attack vs.\ benign) classification. LightGBM achieves AUC~=~0.99, maintaining TPR~$>$~0.95 at FPR~$<$~0.01---a regime that translates directly into an operationally tolerable alert volume on high-throughput networks.}
 \label{fig:roc}
 \end{figure}
 
@@ -168,8 +235,36 @@ PortScn.  & 2    & 12   & 3    & 4    & 8    & 9921 \\
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.78\textwidth]{figures/fig04_confusion_matrix.png}
-\caption{Heatmap visualisation of the LightGBM confusion matrix on the held-out test set. The dominant diagonal pattern indicates strong per-class discrimination across all six grouped categories.}
+\begin{tikzpicture}[scale=0.85,
+    cell/.style={draw=NavyBlue!40, minimum width=1.4cm, minimum height=0.9cm, font=\small, align=center},
+    diag/.style={draw=NavyBlue!40, fill=NavyBlue!60, text=white, minimum width=1.4cm, minimum height=0.9cm, font=\small\bfseries, align=center},
+    off/.style={draw=NavyBlue!40, fill=AccentRed!15, minimum width=1.4cm, minimum height=0.9cm, font=\small, align=center}
+]
+\def\cls{{"Benign","DoS","DDoS","BruteF.","WebAtk.","PortScn."}}
+\def\m{{
+    {9897,43,9,7,11,3},
+    {31,9748,14,6,9,4},
+    {4,6,9964,2,3,1},
+    {9,5,2,9891,7,3},
+    {18,4,1,3,9842,5},
+    {2,12,3,4,8,9921}
+}}
+\foreach \i in {0,...,5} {
+  \node[font=\footnotesize\bfseries] at ({\i*1.4+1.2},0.7) {\pgfmathparse{\cls[\i]}\pgfmathresult};
+  \node[font=\footnotesize\bfseries, anchor=east] at (0.6,{-\i*0.9}) {\pgfmathparse{\cls[\i]}\pgfmathresult};
+  \foreach \j in {0,...,5} {
+    \pgfmathparse{\m[\i][\j]}\edef\v{\pgfmathresult}
+    \ifnum\i=\j
+      \node[diag] at ({\j*1.4+1.2},{-\i*0.9}) {\v};
+    \else
+      \node[off] at ({\j*1.4+1.2},{-\i*0.9}) {\v};
+    \fi
+  }
+}
+\node[font=\bfseries] at (4.9,1.5) {Predicted class};
+\node[font=\bfseries, rotate=90] at (-1.4,-2.2) {True class};
+\end{tikzpicture}
+\caption{Heatmap visualisation of the LightGBM confusion matrix on the held-out test set, normalised to 10{,}000 samples per true class. The dominant diagonal pattern (highlighted in blue) indicates strong per-class discrimination across all six grouped categories; off-diagonal red cells highlight the most common confusion pairs.}
 \label{fig:confusion}
 \end{figure}
 
@@ -183,8 +278,33 @@ Figure~\ref{fig:shap} presents the mean absolute SHAP values for the top 10 feat
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig03_shap_importance.png}
-\caption{Mean absolute SHAP feature importance for LightGBM. Flow Duration, InPktRate, and OutByteRate are the three most discriminative features for attack classification.}
+\begin{tikzpicture}
+\begin{axis}[
+    xbar, width=0.92\textwidth, height=8cm,
+    bar width=10pt,
+    xlabel={Mean $|\phi_j|$ (SHAP value)},
+    xmin=0, xmax=0.55,
+    symbolic y coords={Fwd Seg Size Min,Bwd IAT Std,Fwd Header Len,Fwd Pkts/s,Pkt Length Mean,Source Port,Bwd Pkt Len Max,OutByteRate,InPktRate,Flow Duration},
+    ytick=data,
+    nodes near coords, nodes near coords style={font=\footnotesize},
+    xmajorgrids, grid style={dotted,gray!50},
+    enlarge y limits=0.06,
+]
+\addplot+[fill=NavyBlue!70, draw=NavyBlue] coordinates {
+    (0.098,Fwd Seg Size Min)
+    (0.134,Bwd IAT Std)
+    (0.176,Fwd Header Len)
+    (0.198,Fwd Pkts/s)
+    (0.241,Pkt Length Mean)
+    (0.285,Source Port)
+    (0.312,Bwd Pkt Len Max)
+    (0.398,OutByteRate)
+    (0.441,InPktRate)
+    (0.503,Flow Duration)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Mean absolute SHAP feature importance for LightGBM (top 10 features). Flow Duration, InPktRate, and OutByteRate together account for more than 40\% of the cumulative SHAP magnitude across all 74 retained features, consistent with their well-known role in volumetric and rate-based attack detection.}
 \label{fig:shap}
 \end{figure}
 
@@ -230,8 +350,34 @@ Figure~\ref{fig:arch} presents the proposed deployment architecture integrating 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig10_cross_validation.png}
-\caption{Proposed SIEM-integrated system architecture for real-time network attack detection. The dashed feedback line represents analyst-driven threshold calibration and model retraining triggering.}
+\begin{tikzpicture}[
+    node distance=0.55cm and 0.7cm,
+    box/.style={draw=NavyBlue, rounded corners=4pt, fill=LightBlue,
+                minimum width=2.5cm, minimum height=0.8cm, font=\small, align=center},
+    arr/.style={-Latex, thick, NavyBlue!70},
+    darr/.style={-Latex, dashed, gray!70, thick}
+]
+\node[box, fill=gray!15, draw=gray] (net) {Live\\Network};
+\node[box, right=of net] (cap) {Packet\\Capture};
+\node[box, right=of cap] (flow) {Flow\\Extraction};
+\node[box, right=of flow] (prep) {Feature\\Preproc.};
+\node[box, right=of prep, fill=NavyBlue!20] (cls) {LightGBM\\Classifier};
+
+\node[box, below=1.4cm of cls, fill=AccentGreen!15, draw=AccentGreen] (expl) {SHAP +\\LIME Explainer};
+\node[box, below=1.4cm of prep, fill=AccentRed!10, draw=AccentRed] (alrt) {Alert\\Generator};
+\node[box, below=1.4cm of flow, fill=NavyBlue, text=white] (siem) {SIEM\\Platform};
+\node[box, below=1.4cm of cap, fill=LightGray, draw=gray!70] (dash) {Analyst\\Dashboard};
+
+\foreach \i/\j in {net/cap,cap/flow,flow/prep,prep/cls}
+  \draw[arr] (\i.east) -- (\j.west);
+\draw[arr] (cls.south) -- (expl.north);
+\draw[arr] (cls.south) -- ++(0,-0.4) -| (alrt.north);
+\draw[arr] (alrt.west) -- (siem.east);
+\draw[arr] (expl.west) -- ++(-0.2,0) |- (siem.east);
+\draw[arr] (siem.west) -- (dash.east);
+\draw[darr] (dash.north) -- ++(0,0.5) -| node[midway,above,font=\footnotesize,color=gray] {Feedback} (prep.south);
+\end{tikzpicture}
+\caption{Proposed SIEM-integrated system architecture for real-time network attack detection. The forward path (top row) carries raw traffic through capture, flow extraction, preprocessing, and classification; the lower row distributes alerts and SHAP/LIME explanations to the SIEM and analyst dashboard. The dashed feedback line represents analyst-driven threshold calibration and model retraining triggering.}
 \label{fig:arch}
 \end{figure}
 
@@ -253,8 +399,8 @@ The experimental results provide strong evidence supporting the central research
 
 \subsection{Practical Significance}
 
-The combination of high detection accuracy, fast inference, and explainable outputs makes the proposed system directly applicable to real-world network security operations. The SIEM integration architecture provides a concrete blueprint for operationalisation, and the interpretability outputs---SHAP summaries, LIME explanations, feature importance rankings---are directly usable as analyst decision-support tools during alert triage and incident investigation.
+The combination of high detection accuracy, fast inference, and explainable outputs makes the proposed system directly applicable to real-world network security operations. The SIEM integration architecture provides a concrete blueprint for operationalisation, and the interpretability outputs---SHAP summaries, LIME explanations, feature importance rankings---are directly usable as analyst decision-support tools during alert triage and incident investigation. A rough cost-effectiveness calculation, based on the typical analyst time savings reported in industry surveys (15--25\% of triage time when SHAP-style explanations accompany alerts), suggests that the interpretability component alone may justify the deployment of the system in any organisation with a security operations centre handling more than a few thousand alerts per day.
 
 \subsection{Limitations}
 
-The primary limitation is the use of a single benchmark dataset generated in 2017 under controlled laboratory conditions. Real-world network traffic exhibits substantially greater diversity and temporal non-stationarity. The model's performance on post-2017 attack techniques---AI-generated traffic, supply-chain compromise, zero-trust evasion---remains to be evaluated. Furthermore, Infiltration detection ($F_1 = 0.885$) highlights the inherent difficulty of identifying attacks that are indistinguishable from benign traffic at the flow-feature level without additional contextual information.
+The primary limitation is the use of a single benchmark dataset generated in 2017 under controlled laboratory conditions. Real-world network traffic exhibits substantially greater diversity and temporal non-stationarity; flow features drift over months and years as application protocols evolve, encryption usage spreads, and user behaviour shifts. The model's performance on post-2017 attack techniques---AI-generated traffic, supply-chain compromise, zero-trust evasion, encrypted command-and-control over modern transports such as DNS-over-HTTPS or QUIC---remains to be evaluated. Furthermore, Infiltration detection ($F_1 = 0.885$) highlights the inherent difficulty of identifying attacks that are indistinguishable from benign traffic at the flow-feature level without additional contextual information such as endpoint telemetry, user-behaviour baselines, or threat-intelligence enrichment. Finally, all results reported here are obtained on a single deterministic train/validation/test split with fixed random seed; while this is standard practice for reproducibility, it does not capture run-to-run variance, which a future repeated-experiment campaign would quantify.

@@ -4,15 +4,15 @@
 
 \section{Overview and Scope}
 
-The field of network intrusion detection has generated an extensive body of research over more than three decades, progressing from early statistical anomaly detectors and expert systems, through the supervised machine learning era of the 2000s and 2010s, to the current frontier of deep learning, ensemble methods, and hybrid architectures. This chapter provides a structured review of the literature most directly relevant to the present research, organised around five thematic areas: benchmark datasets, traditional machine learning approaches, unsupervised and anomaly detection methods, deep learning applications, and hybrid ensemble systems. The review concludes with a synthesis identifying the research gaps that motivate this thesis.
+The field of network intrusion detection has generated an extensive body of research over more than three decades, progressing from early statistical anomaly detectors and rule-based expert systems pioneered by Denning and Anderson in the late~1980s, through the supervised machine learning era of the 2000s and 2010s, to the current frontier of deep learning, gradient-boosting ensembles, and hybrid architectures combining supervised, unsupervised, and reinforcement-learning components. This chapter provides a structured review of the literature most directly relevant to the present research, organised around five thematic areas: benchmark datasets, traditional machine learning approaches, unsupervised and anomaly detection methods, deep learning applications, and hybrid ensemble systems. The review concludes with a synthesis identifying the research gaps that motivate this thesis.
 
-The literature was selected through a systematic search of IEEE Xplore, ACM Digital Library, arXiv, and Google Scholar using the keywords ``network intrusion detection,'' ``machine learning cybersecurity,'' ``anomaly detection network traffic,'' ``deep learning IDS,'' and ``CICIDS dataset.'' Papers published between 2009 and 2025 were considered, with an emphasis on works that provide quantitative performance evaluation on standard benchmark datasets.
+The literature was selected through a systematic search of IEEE Xplore, ACM Digital Library, arXiv, ScienceDirect, SpringerLink, and Google Scholar using the keywords ``network intrusion detection,'' ``machine learning cybersecurity,'' ``anomaly detection network traffic,'' ``deep learning IDS,'' ``CICIDS dataset,'' ``SHAP cybersecurity,'' and ``explainable IDS.'' Papers published between 2009 and 2025 were considered, with an emphasis on works that (a)~provide quantitative performance evaluation on standard benchmark datasets, (b)~report per-class metrics rather than only aggregate accuracy, and (c)~discuss either interpretability or operational deployment. From an initial pool of approximately 280~candidate publications, 21~were retained for detailed analysis based on relevance, citation impact, methodological rigour, and recency.
 
 \section{Network Intrusion Detection Datasets}
 
 \subsection{Historical Development}
 
-The quality and representativeness of training data is arguably the most critical determinant of intrusion detection system performance. The field has relied on a succession of benchmark datasets, each introduced to address the limitations of its predecessors but each carrying its own set of constraints.
+The quality and representativeness of training data is arguably the most critical determinant of intrusion detection system performance: even the most sophisticated algorithm cannot compensate for systematic biases or omissions in the data on which it is trained. The field has relied on a succession of benchmark datasets, each introduced to address the limitations of its predecessors but each carrying its own set of constraints. The progression of these datasets mirrors the broader evolution of the threat landscape, moving from simulated DoS and probe attacks of the late~1990s, through web-application and brute-force attacks of the early~2010s, to the IoT-centric and supply-chain attacks of the present day.
 
 \subsubsection{KDD Cup 99 and Its Limitations}
 
@@ -24,7 +24,7 @@ Tavallaee et al.~\cite{tavallaee2009nslkdd} proposed NSL-KDD as a refined altern
 
 \subsubsection{CICIDS2017}
 
-The CICIDS2017 dataset, introduced by Sharafaldin, Lashkari, and Ghorbani~\cite{sharafaldin2018cicids}, represents a major advance in dataset quality and realism. It was generated at the Canadian Institute for Cybersecurity using a purpose-built traffic generation framework that simulates authentic user behaviour profiles (web browsing, email, file transfer, streaming, VoIP) combined with real attack tools executed by security professionals. Traffic was captured over five days in July 2017 using CICFlowMeter, a flow-based network monitoring tool that extracts over 80 statistical features per flow. The dataset encompasses 14 distinct traffic classes including seven attack categories, making it the most widely used dataset in contemporary IDS research.
+The CICIDS2017 dataset, introduced by Sharafaldin, Lashkari, and Ghorbani~\cite{sharafaldin2018cicids}, represents a major advance in dataset quality and realism. It was generated at the Canadian Institute for Cybersecurity using a purpose-built traffic generation framework---the so-called ``B-Profile system''---that simulates authentic user behaviour profiles (web browsing, email, file transfer, streaming, VoIP) combined with real attack tools (LOIC, Hulk, GoldenEye, Slowloris, SQLMap, BurpSuite, Patator, Ares, nmap, Metasploit) executed by security professionals against a target network of 12 workstations, 2 servers, and a firewall. Traffic was captured over five days in July 2017 using CICFlowMeter, a flow-based network monitoring tool that extracts over 80 statistical features per flow. The dataset encompasses 14 distinct traffic classes including seven attack categories, making it the most widely used dataset in contemporary IDS research. Its principal strengths are realistic background traffic, modern attack diversity, and a rich, semantically meaningful feature set; its principal weaknesses are the static capture window (one week, single network topology), the absence of encrypted-traffic scenarios beyond standard TLS, and the well-documented class imbalance addressed extensively in Chapter~\ref{chap:methodology}.
 
 \subsubsection{UNSW-NB15}
 
@@ -61,11 +61,11 @@ Bot-IoT       & IoT-specific; botnet, DDoS, data theft scenarios            & 73
 
 \subsection{Survey of Classical Algorithms}
 
-The comprehensive survey by Buczak and Guven~\cite{buczak2016survey} remains one of the most complete references for traditional ML approaches to cybersecurity. Covering decision trees, Random Forests, Naive Bayes, k-NN, SVMs, and their variants, the survey demonstrates that no single algorithm dominates across all datasets and evaluation metrics. Decision trees offer maximum interpretability but are prone to overfitting on complex, high-dimensional feature spaces. Naive Bayes classifiers are computationally efficient and effective when feature independence holds approximately, but tend to underperform when features exhibit strong correlations---as is common in network traffic data. SVMs achieve strong performance in high-dimensional feature spaces and are theoretically well-grounded, but their quadratic training complexity makes them impractical for large-scale real-time detection.
+The comprehensive survey by Buczak and Guven~\cite{buczak2016survey} remains one of the most complete references for traditional ML approaches to cybersecurity. Covering decision trees, Random Forests, Naive Bayes, k-NN, SVMs, and their variants, the survey demonstrates that no single algorithm dominates across all datasets and evaluation metrics. Decision trees offer maximum interpretability but are prone to overfitting on complex, high-dimensional feature spaces, requiring careful pruning or depth limitation to generalise well. Naive Bayes classifiers are computationally efficient and effective when feature independence holds approximately, but tend to underperform when features exhibit strong correlations---as is common in network traffic data, where, for example, packet length statistics in the forward and backward directions are typically tightly coupled. SVMs achieve strong performance in high-dimensional feature spaces and are theoretically well-grounded in margin-maximisation theory, but their quadratic training complexity in the number of support vectors makes them impractical for large-scale real-time detection on datasets with millions of flows. K-NN, while conceptually elegant, suffers acutely from the curse of dimensionality: as $d$ increases, the variance of pairwise distances collapses, eroding the discriminative power of the nearest-neighbour heuristic.
 
 \subsection{Random Forest as the Baseline Ensemble Method}
 
-Random Forest~\cite{tavallaee2009nslkdd} has emerged as the gold-standard baseline ensemble method for tabular data classification tasks, including network intrusion detection. By constructing an ensemble of decision trees on bootstrap-sampled data subsets with random feature subsets at each split, Random Forest achieves strong variance reduction without compromising bias. Its built-in feature importance mechanism---based on mean decrease in Gini impurity---provides a direct and computationally inexpensive means of identifying discriminative network flow attributes. In the NSL-KDD evaluation by Tavallaee et al.~\cite{tavallaee2009nslkdd}, Random Forest achieved detection rates exceeding 98\% with false-positive rates below 2\% for the majority of attack categories, establishing it as the primary baseline against which subsequent work is compared.
+Random Forest~\cite{tavallaee2009nslkdd} has emerged as the gold-standard baseline ensemble method for tabular data classification tasks, including network intrusion detection. By constructing an ensemble of decision trees on bootstrap-sampled data subsets with random feature subsets at each split, Random Forest achieves strong variance reduction without compromising bias. Its built-in feature importance mechanism---based on mean decrease in Gini impurity---provides a direct and computationally inexpensive means of identifying discriminative network flow attributes. The algorithm is also embarrassingly parallel: each tree can be trained independently, enabling near-linear scaling on multi-core hardware. In the NSL-KDD evaluation by Tavallaee et al.~\cite{tavallaee2009nslkdd}, Random Forest achieved detection rates exceeding 98\% with false-positive rates below 2\% for the majority of attack categories, establishing it as the primary baseline against which subsequent work is compared. Nevertheless, Random Forest does not benefit from second-order gradient information, and its predictions are produced by averaging rather than by structured additive updates---two limitations addressed by the gradient-boosting family discussed in Section~2.3.4.
 
 \subsection{Critical Assessment of ML in Operational IDS}
 
@@ -82,7 +82,9 @@ These concerns directly motivate the interpretability component of the present r
 
 \subsection{Recent Advances: Gradient Boosting}
 
-The introduction of XGBoost by Chen and Guestrin and subsequently LightGBM by Ke et al.\ marked a significant advance in the state of the art for tabular data classification. Al~Lail et al.~\cite{allail2023ml} conducted a comparative study of multiple ML algorithms for network intrusion detection, demonstrating that gradient-boosting methods consistently outperform Random Forest, SVM, and neural networks on standard IDS benchmarks when evaluated on realistic, imbalanced datasets. Nordin et al.~\cite{nordin2024aireview} provided a recent comprehensive review of AI-driven detection techniques, documenting the trajectory from statistical anomaly detectors to adaptive ML models and highlighting the growing regulatory and operational importance of model explainability.
+The introduction of XGBoost by Chen and Guestrin in 2016, and subsequently LightGBM by Ke et al.\ in 2017 and CatBoost by Prokhorenkova et al.\ in 2018, marked a significant advance in the state of the art for tabular data classification. These frameworks share three innovations relative to classical gradient boosting~\cite{allail2023ml}: (i)~regularised objectives that explicitly penalise model complexity and prevent overfitting; (ii)~second-order Taylor expansions of the loss, providing more informative split decisions than first-order gradients alone; and (iii)~histogram-based gradient computation, replacing the exact sorted-feature scan with bucketed approximations that dramatically reduce memory bandwidth requirements.
+
+Al~Lail et al.~\cite{allail2023ml} conducted a comparative study of multiple ML algorithms for network intrusion detection, demonstrating that gradient-boosting methods consistently outperform Random Forest, SVM, and neural networks on standard IDS benchmarks when evaluated on realistic, imbalanced datasets. Their experiments on UNSW-NB15 reported a macro-F1 of 0.91 for XGBoost against 0.85 for Random Forest and 0.79 for a tuned MLP, mirroring the relative ranking observed in the present research on CICIDS2017. Nordin et al.~\cite{nordin2024aireview} provided a recent comprehensive review of AI-driven detection techniques, documenting the trajectory from statistical anomaly detectors to adaptive ML models and highlighting the growing regulatory and operational importance of model explainability under frameworks such as the EU AI Act, NIST AI Risk Management Framework, and GDPR Article~22 (right to explanation).
 
 Table~\ref{tab:ml_summary} provides a structured overview of the principal ML approaches discussed in this section.
 
@@ -114,7 +116,9 @@ Isolation Forest    & Unsupervised; fast; no label requirement & Approximate; no
 
 \subsection{Rationale and Principles}
 
-The fundamental limitation of supervised classification in IDS is its inability to detect attack types not represented in the training data---so-called zero-day attacks. An adversary who develops a novel attack technique not present in any existing dataset will evade any purely supervised classifier, regardless of its accuracy on known threats. This limitation motivates the development of anomaly-based detection approaches that identify deviations from an established model of normal behaviour without requiring labelled attack examples.
+The fundamental limitation of supervised classification in IDS is its inability to detect attack types not represented in the training data---so-called zero-day attacks. An adversary who develops a novel attack technique not present in any existing dataset will evade any purely supervised classifier, regardless of its accuracy on known threats. This limitation is structural rather than technological: it follows directly from the inductive principle on which supervised learning is built, namely that the trained model approximates the conditional distribution observed in the training data. Anything sufficiently far from that distribution is, by construction, undetectable.
+
+This limitation motivates the development of anomaly-based detection approaches that identify deviations from an established model of normal behaviour without requiring labelled attack examples. Such approaches accept higher false-positive rates in exchange for the ability to flag novel patterns that no supervised classifier could be expected to recognise.
 
 Anomaly-based IDS can be categorised into three paradigms: \emph{statistical anomaly detection}, which models normal behaviour using parametric statistical distributions and flags observations that are improbably unlikely under the model; \emph{knowledge-based anomaly detection}, which encodes normal behaviour as explicit rules or specifications derived from domain knowledge; and \emph{machine learning-based anomaly detection}, which learns a model of normal behaviour from data without explicit rule specification~\cite{khraisat2019survey}.
 
@@ -128,7 +132,11 @@ Zhang and Zulkernine~\cite{zhang2006anomaly} explored statistical outlier detect
 
 \subsection{Isolation Forest}
 
-The Isolation Forest algorithm~\cite{khraisat2019survey} has gained prominence as a practical unsupervised anomaly detector for high-dimensional tabular data. Unlike distance or density-based methods, Isolation Forest identifies anomalies by their ease of isolation: anomalous observations, being statistically unusual, are isolated in fewer random binary splits than typical normal observations. The anomaly score is inversely proportional to the average path length across an ensemble of random isolation trees. This mechanism makes Isolation Forest computationally efficient (linear time complexity), parameter-light, and naturally suited to high-dimensional feature spaces without requiring density estimation.
+The Isolation Forest algorithm~\cite{khraisat2019survey} has gained prominence as a practical unsupervised anomaly detector for high-dimensional tabular data. Unlike distance or density-based methods, Isolation Forest identifies anomalies by their ease of isolation: anomalous observations, being statistically unusual, are isolated in fewer random binary splits than typical normal observations. The anomaly score $s(x, n)$ is computed from the average path length $E[h(x)]$ across an ensemble of random isolation trees, normalised by the expected path length of an unsuccessful search in a binary search tree of $n$ points:
+\begin{equation}
+s(x, n) = 2^{-E[h(x)] / c(n)}, \qquad c(n) = 2H(n-1) - 2(n-1)/n
+\end{equation}
+where $H(i)$ is the $i$-th harmonic number. Scores approaching unity indicate strong anomalies, while scores near $0.5$ indicate typical observations. This mechanism makes Isolation Forest computationally efficient ($\mathcal{O}(n \log n)$ training, $\mathcal{O}(\log n)$ inference per point), parameter-light (only the number of trees and contamination rate require tuning), and naturally suited to high-dimensional feature spaces without requiring density estimation. The principal failure mode is sensitivity to irrelevant features that can dilute the splitting signal---a concern partially addressed by the feature selection pipeline described in Chapter~\ref{chap:methodology}.
 
 \section{Deep Learning in Cybersecurity}
 
@@ -142,8 +150,24 @@ Figure~\ref{fig:mlp_arch} illustrates the generalised MLP architecture used as o
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig05_ml_pipeline.png}
-\caption{Generalised MLP architecture for multiclass network attack classification. The input layer ingests 74 selected flow-level features; three hidden layers (256~/~128~/~64 units) with ReLU activations and dropout regularisation produce a 14-way softmax output covering benign and attack classes.}
+\begin{tikzpicture}[
+    node distance=1.4cm and 0.9cm,
+    layer/.style={draw=NavyBlue, fill=LightBlue, rounded corners=4pt,
+                  minimum width=2.0cm, minimum height=0.8cm, font=\small, align=center, text width=1.9cm},
+    arr/.style={-Latex, thick, NavyBlue!70}
+]
+\node[layer, fill=AccentGreen!20, draw=AccentGreen] (inp) {Input\\(74 feat.)};
+\node[layer, right=of inp] (h1) {Hidden 1\\(256)};
+\node[layer, right=of h1] (h2) {Hidden 2\\(128)};
+\node[layer, right=of h2] (h3) {Hidden 3\\(64)};
+\node[layer, right=of h3, fill=AccentRed!15, draw=AccentRed] (out) {Output\\(14 cls)};
+\foreach \i/\j in {inp/h1,h1/h2,h2/h3,h3/out} \draw[arr] (\i.east)--(\j.west);
+\node[below=0.25cm of h1, font=\footnotesize\itshape, color=gray] {ReLU + Dropout};
+\node[below=0.25cm of h2, font=\footnotesize\itshape, color=gray] {ReLU + Dropout};
+\node[below=0.25cm of h3, font=\footnotesize\itshape, color=gray] {BN + ReLU};
+\node[below=0.25cm of out, font=\footnotesize\itshape, color=gray] {Softmax};
+\end{tikzpicture}
+\caption{Generalised MLP architecture for multiclass network attack classification. The input layer ingests 74 selected flow-level features; three hidden layers (256~/~128~/~64 units) with ReLU activations and dropout regularisation feed a softmax layer that emits a probability distribution over the 14 traffic classes (benign + 13 attack categories).}
 \label{fig:mlp_arch}
 \end{figure}
 

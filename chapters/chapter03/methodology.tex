@@ -4,14 +4,43 @@
 
 \section{Overall Research Design}
 
-The research adopts a structured experimental design comprising five sequential phases: (1)~dataset selection and acquisition, (2)~data preprocessing and feature engineering, (3)~model design and training, (4)~comparative evaluation, and (5)~interpretability analysis and system design. Each phase builds on the outputs of the preceding one, and the overall pipeline is designed to be reproducible: all preprocessing parameters, model architectures, and evaluation protocols are fully specified to enable replication by independent researchers.
+The research adopts a structured experimental design comprising five sequential phases: (1)~dataset selection and acquisition, (2)~data preprocessing and feature engineering, (3)~model design and training, (4)~comparative evaluation, and (5)~interpretability analysis and system design. Each phase builds on the outputs of the preceding one, and the overall pipeline is designed to be reproducible: all preprocessing parameters, model architectures, hyperparameter search grids, random seeds, library versions, and evaluation protocols are fully specified (see Appendix~\ref{app:supplementary}) to enable replication by independent researchers. Reproducibility is treated not as an aesthetic preference but as an epistemic requirement: claims about the relative performance of algorithms are only meaningful when the experimental conditions under which they were produced can be exactly reconstituted by a third party.
 
 Figure~\ref{fig:workflow} presents the complete methodological workflow as a flowchart, illustrating the data transformation steps, decision points, and feedback loops that constitute the experimental process.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig05_ml_pipeline.png}
-\caption{Complete methodological workflow, from dataset selection through model training, evaluation, interpretability analysis, and system architecture design. The dashed feedback loop represents iterative hyperparameter tuning.}
+\begin{tikzpicture}[
+    node distance=0.55cm and 1.6cm,
+    startstop/.style={rectangle, rounded corners=8pt, draw=NavyBlue, fill=NavyBlue,
+                      text=white, minimum width=4cm, minimum height=0.7cm, font=\small\bfseries, align=center},
+    process/.style={rectangle, draw=SteelBlue, fill=LightBlue,
+                    minimum width=4.2cm, minimum height=0.7cm, font=\small, align=center},
+    decision/.style={diamond, draw=AccentRed, fill=AccentRed!12, aspect=2.6,
+                     font=\small, align=center, inner sep=1pt},
+    arrow/.style={-Latex, thick, NavyBlue!70}
+]
+\node[startstop] (start) {START};
+\node[process, below=of start] (ds) {1. Dataset Selection\\(CICIDS2017)};
+\node[process, below=of ds] (clean) {2. Data Cleaning\\(dupl., NaN, Inf)};
+\node[process, below=of clean] (norm) {3. Normalisation\\(z-score + log)};
+\node[process, below=of norm] (balance) {4. Class Balancing\\(SMOTE + Undersampling)};
+\node[process, below=of balance] (feat) {5. Feature Selection\\(corr., VIF, importance)};
+\node[process, below=of feat] (split) {6. Stratified Split\\(60\% / 20\% / 20\%)};
+\node[process, below=of split] (train) {7. Model Training\\(6 algorithms + CV)};
+\node[decision, below=of train] (perf) {Performance\\Acceptable?};
+\node[process, right=2.5cm of perf] (tune) {Hyperparameter\\Tuning};
+\node[process, below=of perf] (interp) {8. Interpretability\\(SHAP + LIME)};
+\node[process, below=of interp] (arch) {9. System Architecture\\\& SIEM Integration};
+\node[startstop, below=of arch] (end) {END};
+
+\foreach \i/\j in {start/ds,ds/clean,clean/norm,norm/balance,balance/feat,feat/split,split/train,train/perf,perf/interp,interp/arch,arch/end}
+  \draw[arrow] (\i) -- (\j);
+\draw[arrow] (perf.east) -- node[above,font=\footnotesize]{No} (tune.west);
+\draw[arrow] (tune.north) -- ++(0,0.5) -| (train.east);
+\node[right=0.08cm of perf.south east, font=\footnotesize] {Yes};
+\end{tikzpicture}
+\caption{Complete methodological workflow, from dataset selection through model training, evaluation, interpretability analysis, and system architecture design. The feedback loop on the right represents iterative hyperparameter tuning triggered when validation performance does not meet the predefined acceptance thresholds.}
 \label{fig:workflow}
 \end{figure}
 
@@ -19,11 +48,13 @@ Figure~\ref{fig:workflow} presents the complete methodological workflow as a flo
 
 \subsection{Selection Criteria}
 
-The selection of the primary experimental dataset was guided by four criteria: (1)~\textbf{realism}---the dataset should reflect authentic network traffic patterns rather than purely synthetic constructs; (2)~\textbf{diversity}---the dataset should cover a broad range of contemporary attack types, including both volumetric and application-layer attacks; (3)~\textbf{richness}---the feature set should be sufficient for meaningful ML-based analysis without requiring extensive manual feature engineering; and (4)~\textbf{benchmarkability}---the dataset should be widely used in the literature to enable direct comparison with prior work.
+The selection of the primary experimental dataset was guided by four criteria: (1)~\textbf{realism}---the dataset should reflect authentic network traffic patterns rather than purely synthetic constructs, including realistic background traffic from common applications such as web browsing, email, streaming, and file transfer; (2)~\textbf{diversity}---the dataset should cover a broad range of contemporary attack types, including both volumetric (DDoS, DoS) and application-layer (SQL injection, XSS, command injection, brute force, botnet C\&C) attacks, as well as reconnaissance activity (port scanning); (3)~\textbf{richness}---the feature set should be sufficient for meaningful ML-based analysis without requiring extensive manual feature engineering, ideally including flow-level statistical descriptors such as packet rates, byte rates, inter-arrival times, and TCP flag counts; and (4)~\textbf{benchmarkability}---the dataset should be widely used in the literature to enable direct comparison with prior work, with a clear licensing regime permitting academic and reproducible use.
 
 \subsection{CICIDS2017 Dataset Description}
 
-Based on these criteria, CICIDS2017~\cite{sharafaldin2018cicids} was selected as the primary data source. The dataset was generated over five days (3--7~July~2017) at the Canadian Institute for Cybersecurity, using CICFlowMeter to extract flow-level features from raw packet captures. It contains approximately 2.8~million flow records with 80 pre-extracted features per record.
+Based on these criteria, CICIDS2017~\cite{sharafaldin2018cicids} was selected as the primary data source. The alternative candidates---NSL-KDD, UNSW-NB15, and CIC-IDS2018---were eliminated for reasons set out in Chapter~\ref{chap:literature}: NSL-KDD is too dated, UNSW-NB15 was generated under fully synthetic conditions using the IXIA PerfectStorm framework, and CIC-IDS2018, while larger, introduces additional engineering complexity (16~million records across multiple AWS regions) that is not justified by the marginal informational gain for this study.
+
+The CICIDS2017 dataset was generated over five days (3--7~July~2017) at the Canadian Institute for Cybersecurity, using CICFlowMeter to extract flow-level features from raw packet captures. It contains approximately 2.8~million flow records with 80 pre-extracted features per record, organised into seven daily capture files (one per business day). Each flow corresponds to a bidirectional TCP, UDP, or ICMP conversation between two endpoints, identified by the 5-tuple (source IP, destination IP, source port, destination port, transport protocol) and bounded by activity timeout.
 
 Table~\ref{tab:attacks} summarises the attack categories present in CICIDS2017, including the tools used and the capture day.
 
@@ -66,7 +97,7 @@ The 80 features are organised into five semantic groups:
 
 \subsection{Data Integration and Initial Quality Assessment}
 
-The seven individual CSV files provided with CICIDS2017 were consolidated into a unified DataFrame using Apache Pandas. Initial inspection revealed the following data quality issues:
+The seven individual CSV files provided with CICIDS2017 were consolidated into a unified DataFrame using Apache Pandas, with column types coerced to fixed numeric and categorical types to ensure consistency across days. Total memory footprint after consolidation was approximately 2.1~GB. Initial inspection revealed the following data quality issues:
 \begin{itemize}
     \item \textbf{Duplicate rows:} 23{,}415 exact duplicate records, arising from the CSV merging process. All duplicates were removed.
     \item \textbf{Infinite values:} Present in 12 features computed as rates or ratios in which the denominator could be zero (e.g., when Flow Duration~=~0 for instantaneous flows). Affected records were either corrected by substituting column maximum values or removed if the proportion of affected records per feature exceeded 1\%.
@@ -78,12 +109,12 @@ The seven individual CSV files provided with CICIDS2017 were consolidated into a
 
 \subsubsection{Z-Score Standardisation}
 
-All numerical features were standardised using z-score normalisation:
+All numerical features were standardised using z-score normalisation. The transformation parameters $\mu$ and $\sigma$ were estimated exclusively from the training partition and then applied unchanged to the validation and test partitions, in line with standard practice to avoid information leakage from held-out data into the model. The transformation is defined as:
 \begin{equation}
 z_i = \frac{x_i - \mu}{\sigma}
 \label{eq:zscore}
 \end{equation}
-where $x_i$ is the raw feature value, $\mu$ is the sample mean, and $\sigma$ is the sample standard deviation computed on the training set. This transformation ensures that all features have zero mean and unit variance, preventing features with large absolute magnitudes from disproportionately influencing distance-based and gradient-based algorithms.
+where $x_i$ is the raw feature value, $\mu$ is the sample mean, and $\sigma$ is the sample standard deviation computed on the training set. This transformation ensures that all features have zero mean and unit variance, preventing features with large absolute magnitudes (such as raw byte counts that can span six orders of magnitude) from disproportionately influencing distance-based algorithms (KNN), kernel-based algorithms (SVM), and gradient-based algorithms (MLP). Tree-based algorithms such as Random Forest, XGBoost, and LightGBM are scale-invariant in principle, but the standardised features were used uniformly across all six models for consistency and to enable direct comparison of feature-importance magnitudes.
 
 \subsubsection{Logarithmic Transformation}
 
@@ -102,7 +133,7 @@ The original CICIDS2017 dataset exhibits a pronounced class imbalance: benign tr
 
 \subsubsection{SMOTE Oversampling}
 
-The Synthetic Minority Oversampling Technique (SMOTE) was applied to augment underrepresented attack classes. For each minority-class sample $x_i$, SMOTE generates synthetic instances by interpolating with $k$ nearest neighbours in feature space:
+The Synthetic Minority Oversampling Technique (SMOTE), introduced by Chawla et al.\ in 2002, was applied to augment underrepresented attack classes. SMOTE was preferred over naive random oversampling because the latter merely duplicates existing minority examples and offers no protection against overfitting to specific outlier flows. For each minority-class sample $x_i$, SMOTE generates synthetic instances by interpolating with $k$ nearest neighbours in feature space:
 \begin{equation}
 x_{\text{new}} = x_i + \lambda \cdot (x_{\text{nn}} - x_i), \qquad \lambda \sim \mathcal{U}(0,1)
 \label{eq:smote}
