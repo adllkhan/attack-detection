@@ -1,0 +1,101 @@
+\chapter{Introduction}
+\label{chap:intro}
+\setlength{\parskip}{0.8em}
+
+\section{Background and Motivation}
+
+The modern digital ecosystem is defined by its unprecedented scale, interconnectedness, and dependence on continuous, uninterrupted information flow. From national critical infrastructure---power grids, water treatment facilities, transportation control systems---to financial markets, healthcare networks, and the everyday devices of individual citizens, virtually every dimension of contemporary society rests on the reliability and security of digital networks. This radical digitisation has brought enormous efficiency gains and new capabilities, but it has simultaneously created an attack surface of staggering breadth and complexity.
+
+Network attacks, broadly defined as deliberate attempts to disrupt, degrade, or gain unauthorised access to computer systems and data through network-based channels, have grown in both frequency and sophistication at a pace that outstrips the capacity of traditional defensive mechanisms. According to analytical data compiled for CIS-region countries, the number of recorded cyberattacks targeting Kazakhstan and neighbouring states increased by a factor of 2.6 in the second quarter of 2024 alone, compared to the corresponding period in 2023~\cite{enisa2024cis}. On the global scale, financial losses attributable to cybercrime reached approximately \texteuro10~billion in 2024, doubling year-over-year and representing a fivefold increase over the figures recorded in 2019~\cite{cyberventures2024}.
+
+These statistics, striking as they are, capture only the attacks that were detected and reported. The ``dark figure'' of unreported incidents---breaches that go undetected for weeks, months, or years---is widely believed to be substantially larger. High-profile incidents such as the SolarWinds supply-chain compromise, the Colonial Pipeline ransomware attack, and the Medibank data breach have demonstrated that even large, well-resourced organisations with dedicated security teams are vulnerable to sophisticated, persistent adversaries.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig01_ecg_comparison.png}
+\caption{Global cybercrime financial losses 2019--2024 (\texteuro~billions). The 2024 figure represents a doubling over 2023. Source: ENISA Threat Landscape Reports.}
+\label{fig:cybercrime_losses}
+\end{figure}
+
+One of the most significant threat amplification factors in recent years is the weaponisation of artificial intelligence by malicious actors. AI-assisted attacks can scan for vulnerabilities at machine speed, adapt dynamically to defensive countermeasures, generate highly convincing phishing content, and launch coordinated multi-vector campaigns that would require large teams of human operators to execute manually. This development has fundamentally altered the strategic balance between attackers and defenders, eroding the advantage that traditional, signature-based intrusion detection systems once offered.
+
+Signature-based detection---the identification of known attack patterns by matching network traffic against a database of predefined signatures---is effective against well-catalogued threats but is inherently reactive. A new attack variant must be observed, analysed, and added to the signature database before it can be detected, creating a window of exposure that sophisticated adversaries deliberately exploit. Anomaly-based detection, which identifies deviations from established normal behaviour, offers theoretical zero-day detection capability but has historically suffered from unacceptably high false-positive rates that generate alert fatigue among security analysts.
+
+The convergence of these challenges has motivated a paradigm shift in the research community towards data-driven, machine learning-based intrusion detection systems. By learning statistical models of network traffic behaviour from large labelled datasets, ML-based systems can generalise to previously unseen attack patterns to a degree impossible for rule-based approaches. They can also be continuously retrained as new threat data becomes available, offering an inherent adaptability that is essential for long-term effectiveness.
+
+Kazakhstan, as a rapidly digitalising economy with growing dependence on digital public services, financial infrastructure, and industrial control systems, faces particular urgency in developing robust cybersecurity capabilities. The country's National Cybersecurity Strategy and participation in CIS-level information security cooperation frameworks reflect governmental recognition of this priority. The present research directly contributes to the development of analytical tools and methodological knowledge relevant to this national strategic context.
+
+\section{Problem Statement}
+
+Despite substantial academic and industrial investment in machine learning-based intrusion detection, several persistent challenges remain unresolved:
+
+\begin{enumerate}
+    \item \textbf{Class imbalance.} In any realistic network capture, benign traffic overwhelmingly dominates malicious traffic. Naive machine learning classifiers trained on such imbalanced data tend to optimise for the majority class, producing models with high accuracy but poor attack detection rates---precisely the wrong trade-off for a security system.
+    \item \textbf{High dimensionality and feature redundancy.} Modern network flow datasets contain dozens to hundreds of features, many of which are highly correlated or provide negligible discriminative information. Training on redundant feature sets increases computational cost, model complexity, and the risk of overfitting.
+    \item \textbf{Concept drift.} Attack methods evolve continuously. A model trained on historical data may lose accuracy as new attack variants emerge, requiring mechanisms for periodic retraining or online adaptation.
+    \item \textbf{Lack of interpretability.} Many high-performing ML models, particularly deep neural networks, function as black boxes whose decision processes are opaque to human analysts. In a security operations context, unexplained alerts are difficult to act upon, investigate, or escalate, limiting the practical utility of such systems.
+    \item \textbf{Deployment gap.} The majority of published IDS research demonstrates performance on benchmark datasets under idealised conditions. Translation of laboratory results into deployable operational systems that interface with existing security infrastructure (SIEM platforms, threat intelligence feeds, incident response workflows) remains largely underaddressed.
+\end{enumerate}
+
+The present research addresses all five of these challenges through an integrated methodological approach combining rigorous preprocessing, comprehensive model comparison, systematic interpretability analysis, and a concrete deployment architecture proposal.
+
+\section{Research Hypothesis}
+
+The central hypothesis of this research is formulated as follows:
+
+\emph{The application of systematic machine learning methods and data analysis techniques for processing and classifying network traffic data---accounting for threat type, attacker behaviour patterns, connection timing, and flow-level statistical properties---will enable the development of an effective, interpretable, and deployable system for network attack analysis. This system will achieve improved accuracy in detecting both known and novel attack categories relative to traditional methods, and will generate adaptive defence strategy recommendations that meaningfully enhance the cybersecurity posture of adopting organisations.}
+
+More specifically, it is predicted that gradient-boosting ensemble methods, when combined with appropriate data preprocessing, class balancing, and post-hoc interpretability techniques, will outperform both traditional classifiers (Logistic Regression, KNN) and single deep neural networks on the CICIDS2017 benchmark, achieving an F1-score exceeding 0.95 and a ROC-AUC exceeding 0.98.
+
+\section{Research Objectives and Tasks}
+
+\textbf{Primary Objective.} To develop, implement, and evaluate a machine learning-based data analysis system for network attacks that produces accurate, interpretable, and operationally actionable results, supporting the formulation of effective protection strategies against emerging cyber threats.
+
+\textbf{Research Tasks:}
+\begin{enumerate}
+    \item Conduct a systematic review of existing data analysis methods, machine learning algorithms, and benchmark datasets used in the cybersecurity and intrusion detection domains, identifying key research gaps.
+    \item Compare publicly available network intrusion detection benchmark datasets and justify the selection of the primary experimental dataset.
+    \item Design and implement a comprehensive data preprocessing pipeline addressing class imbalance, feature redundancy, normalisation, and data quality issues.
+    \item Implement and train six machine learning classification algorithms ranging from baseline statistical models to advanced ensemble and neural network approaches.
+    \item Conduct a systematic comparative evaluation of all models using appropriate performance metrics under consistent experimental conditions.
+    \item Apply SHAP and LIME interpretability frameworks to the best-performing model to identify discriminative network features and provide instance-level explanations.
+    \item Analyse misclassification patterns to identify systematic failure modes and derive recommendations for future system improvements.
+    \item Propose a practical, deployment-ready system architecture that integrates the trained model with enterprise SIEM platforms.
+    \item Formulate evidence-based recommendations for organisations seeking to deploy machine learning-based intrusion detection systems.
+\end{enumerate}
+
+\section{Object and Subject of Research}
+
+\textbf{Object of research:} The process of analysing data on network attacks with the goal of identifying behavioural patterns, detecting anomalous activity, predicting emerging threat types, and generating actionable, evidence-based cybersecurity defence strategies.
+
+\textbf{Subject of research:} Machine learning methods, data analysis techniques, and system architectures applied to the classification of network traffic as benign or malicious, including the preprocessing procedures, model selection criteria, evaluation frameworks, and interpretability methods that constitute the methodological core of an effective intrusion detection system.
+
+\section{Research Methods}
+
+The research employs a multi-method experimental approach drawing on:
+\begin{itemize}
+    \item \textbf{Quantitative data analysis:} Statistical analysis of network flow features, class distribution analysis, correlation analysis, and variance inflation factor (VIF) computation for feature selection.
+    \item \textbf{Machine learning experimentation:} Supervised classification using six algorithms; unsupervised anomaly detection using Isolation Forest; temporal sequence modelling using LSTM networks.
+    \item \textbf{Model evaluation methodology:} Stratified k-fold cross-validation for hyperparameter optimisation; held-out test set evaluation for final performance estimation; macro-averaged metric computation for fair evaluation under class imbalance.
+    \item \textbf{Interpretability analysis:} Global feature importance via SHAP summary plots; local instance explanation via LIME; error analysis of misclassified instances.
+    \item \textbf{Systems design:} Architecture design for deployment-ready intrusion detection systems with SIEM integration.
+\end{itemize}
+
+\section{Scientific Novelty and Contributions}
+
+This research makes the following scientific and practical contributions:
+\begin{enumerate}
+    \item A reproducible, modular preprocessing pipeline for network intrusion detection datasets that jointly addresses class imbalance (SMOTE~+~undersampling), high dimensionality (correlation~+~VIF filtering), and data quality (duplicate and infinite value removal).
+    \item The most systematic published comparison of six ML algorithms on CICIDS2017 using macro-averaged evaluation metrics with full per-class F1-score breakdowns.
+    \item A comprehensive SHAP and LIME interpretability analysis demonstrating the operational applicability of ML explanations in an IDS analyst context.
+    \item A concrete SIEM-compatible system architecture bridging the gap between academic model development and industrial deployment practice.
+    \item Empirical evidence supporting the selection of LightGBM as the optimal algorithm for network traffic classification under the constraints of high dimensionality, class imbalance, and real-time processing requirements.
+\end{enumerate}
+
+\section{Practical Significance}
+
+The practical significance of this research lies in its direct applicability to the design and deployment of next-generation intrusion detection capabilities in organisations of various sizes and sectors. The preprocessing pipeline and model training procedure are fully documented and reproducible, enabling practitioners to apply the methodology to their own network datasets. The proposed SIEM integration architecture provides a concrete blueprint for operationalisation, reducing the implementation barrier for organisations seeking to adopt ML-based security analytics. The interpretability analysis outputs---SHAP summary plots, feature importance rankings, and LIME explanations---are directly usable by security analysts as decision-support tools during alert triage and incident investigation. More broadly, the research contributes to Kazakhstan's developing cybersecurity capability by advancing the theoretical and methodological foundations for intelligent network security systems.
+
+\section{Thesis Structure}
+
+The remainder of this thesis is organised as follows. Chapter~\ref{chap:literature} presents a systematic literature review covering benchmark datasets, machine learning methods for intrusion detection, anomaly detection approaches, deep learning architectures, and hybrid ensemble systems. Chapter~\ref{chap:methodology} describes the complete research methodology, including dataset selection justification, the preprocessing pipeline, the six ML model architectures and their mathematical formulations, and the evaluation metrics framework. Chapter~\ref{chap:results} presents and discusses the experimental results, including class distribution analysis, comparative model performance, per-class breakdowns, ROC curve analysis, interpretability findings, and the proposed system architecture. Chapter~\ref{chap:conclusion} synthesises the findings, states conclusions relative to the research hypothesis and objectives, and outlines directions for future research.

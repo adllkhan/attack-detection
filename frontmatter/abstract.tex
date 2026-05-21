@@ -1,0 +1,32 @@
+\chapter{Abstract}
+\begin{SingleSpace}
+
+\noindent \textbf{Title:} Development of a System for Analyzing Data on Network Attacks to Create Effective Strategies to Protect Against New Threats.\\
+\textbf{Author:} Milana Dulatovna Muratbekova.\\
+\textbf{Year:} 2026.
+
+\vspace{0.8em}
+\noindent The exponential growth of cyberattacks against public institutions, financial organisations, critical infrastructure, and individual users has created an urgent need for intelligent, adaptive intrusion detection systems that can operate effectively in the face of rapidly evolving threat landscapes. Traditional signature-based and rule-based security systems are proving increasingly inadequate for detecting novel, sophisticated, and AI-assisted attack methods, motivating the development of data-driven, machine learning-based alternatives.
+
+\vspace{0.8em}
+\noindent This thesis presents the design, development, and experimental validation of a comprehensive machine learning pipeline for the analysis of network attack data. The research is grounded in a systematic preprocessing of the CICIDS2017 benchmark dataset produced by the Canadian Institute for Cybersecurity. The preprocessing pipeline encompasses duplicate removal, z-score normalisation, logarithmic transformation of skewed features, correlation-based and VIF-based feature selection reducing dimensionality from 80 to 74 attributes, and class-imbalance mitigation using the Synthetic Minority Oversampling Technique (SMOTE) combined with random undersampling.
+
+\vspace{0.8em}
+\noindent Six classification algorithms were systematically designed, implemented, and comparatively evaluated: Logistic Regression, K-Nearest Neighbours (KNN), Random Forest, XGBoost, MLP Classifier, and LightGBM. The LightGBM gradient-boosting model achieved the best overall performance across all evaluation metrics: Accuracy~=~0.98, F1-score~=~0.97, and ROC-AUC~=~0.99, while simultaneously offering the shortest training time among the gradient-boosting methods evaluated (89~seconds compared to 317~seconds for XGBoost). This result validates the superiority of LightGBM's leaf-wise tree growth strategy and histogram-based gradient computation for high-dimensional tabular network traffic data.
+
+\vspace{0.8em}
+\noindent Model interpretability and transparency were ensured through the application of SHAP (SHapley Additive exPlanations) global feature importance analysis and LIME (Local Interpretable Model-agnostic Explanations) instance-level explanations. The four most discriminative network flow features were identified as: Flow Duration, Incoming Packet Rate (InPktRate), Outgoing Byte Rate (OutByteRate), and the count of simultaneous connections from the same source IP address. These findings are strongly consistent with established cybersecurity domain knowledge and provide a principled, auditable basis for alert generation.
+
+\vspace{0.8em}
+\noindent Additionally, unsupervised anomaly detection using Isolation Forest and an LSTM-based temporal model were explored for the detection of previously unseen attack patterns, demonstrating their complementary role in a hybrid detection architecture. A system architecture integrating the trained model with enterprise SIEM platforms is proposed, enabling near-real-time, explainable detection, alert generation, and incident management workflow integration.
+
+\vspace{0.8em}
+\noindent The research confirms the central hypothesis: that the systematic application of machine learning methods to network traffic data analysis can yield a high-accuracy, interpretable, and operationally deployable intrusion detection system capable of generating effective protection strategies against both known and emerging cyber threats.
+
+\vspace{0.8em}
+\keywords{network intrusion detection, machine learning, LightGBM, XGBoost, SHAP, LIME, cybersecurity, anomaly detection, SIEM integration, gradient boosting, feature importance, network traffic analysis.}
+
+\vspace{0.8em}
+\noindent \textbf{Volume:} 5 chapters, 21 figures, 10 tables, 21 references, 52 pages.
+
+\end{SingleSpace}

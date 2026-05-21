@@ -1,0 +1,91 @@
+\chapter{Conclusion}
+\label{chap:conclusion}
+\setlength{\parskip}{0.8em}
+
+\section{Summary of Research}
+
+This thesis has presented the end-to-end development and experimental validation of a comprehensive, machine learning-based system for the analysis of network attack data, designed to generate effective and interpretable defence strategies against both known and emerging cyber threats. The research was motivated by the growing inadequacy of traditional signature-based intrusion detection systems in the face of rapidly evolving, AI-assisted attack methodologies, and by the persistent gaps in the academic literature regarding integrated preprocessing, systematic multi-algorithm comparison, operational interpretability, and deployment-ready system architectures.
+
+The research proceeded through five structured phases. In the first phase, a systematic literature review identified the principal benchmark datasets, machine learning approaches, anomaly detection methods, deep learning architectures, and hybrid ensemble systems applied to network intrusion detection. The review confirmed the superiority of gradient-boosting ensemble methods for high-dimensional tabular network traffic data and identified four specific research gaps motivating the present work.
+
+In the second phase, the CICIDS2017 dataset was selected as the primary experimental data source based on its realistic traffic generation methodology, breadth of attack coverage, richness of extracted features, and widespread use in prior work enabling direct comparison. The dataset was acquired, consolidated from multiple CSV files, and subjected to a rigorous quality assessment identifying 23{,}415 duplicate records, 8{,}941 records with missing or infinite values, and label inconsistencies---all of which were remediated.
+
+In the third phase, a multi-stage preprocessing pipeline was designed and applied. Z-score normalisation and logarithmic transformation of skewed features ensured numerical stability and appropriate feature scaling. The severe class imbalance (80.4\% benign, 19.6\% attack) was addressed through a combined SMOTE augmentation and random undersampling strategy, producing a balanced training distribution that achieved high recall across all attack categories. A three-stage feature selection procedure---Pearson correlation filtering, VIF-based multicollinearity elimination, and preliminary importance filtering---reduced the feature set from 80 to 74 attributes, eliminating redundancy while preserving discriminative power. The processed dataset was divided into stratified training (60\%), validation (20\%), and test (20\%) partitions.
+
+In the fourth phase, six machine learning models were designed, implemented, and trained: Logistic Regression, K-Nearest Neighbours, Random Forest, XGBoost, MLP Classifier, and LightGBM. Each model's architecture and mathematical formulation were documented in full. Hyperparameter optimisation was performed using 5-fold stratified cross-validation on the training set. Final performance was assessed on the held-out test set using macro-averaged Accuracy, Precision, Recall, F1-score, and ROC-AUC. Additionally, an unsupervised Isolation Forest model and an LSTM temporal model were evaluated as complementary components of a hybrid detection architecture.
+
+In the fifth phase, the best-performing model (LightGBM) was subjected to global feature importance analysis using SHAP and instance-level explanation using LIME. The four most discriminative features were identified and their cybersecurity interpretations documented. Systematic analysis of false-positive and false-negative cases revealed specific failure modes and generated concrete recommendations for future system improvements. A SIEM-compatible deployment architecture was designed, specifying the data ingestion, classification, interpretability, and platform integration layers.
+
+\section{Principal Findings}
+
+The experimental results support the following principal findings:
+\begin{enumerate}
+    \item \textbf{LightGBM achieves state-of-the-art performance on the CICIDS2017 benchmark:} Accuracy~=~0.98, F1-score~=~0.97, ROC-AUC~=~0.99, outperforming all five competing algorithms while requiring the shortest gradient-boosting training time (89~seconds compared to 317~seconds for XGBoost). This validates the effectiveness of leaf-wise tree growth, GOSS sampling, and EFB feature bundling for network traffic classification.
+
+    \item \textbf{Preprocessing is decisive.} The transition from the imbalanced original dataset to the preprocessed training distribution produced qualitative improvements in minority-class recall across all models. The combination of SMOTE and undersampling provided a better balance than either technique alone, with the stacked approach reducing false-negative rates for Botnet, Brute Force, and Web attack categories by an average of 23~percentage points compared to models trained on the imbalanced original data.
+
+    \item \textbf{Feature selection improves generalisability.} Models trained on the 74-feature selected set consistently outperformed models trained on all 80 features, demonstrating that the eliminated features introduced noise rather than signal. The performance gap was most pronounced for KNN ($F_1$ improvement of 0.04) and Logistic Regression ($F_1$ improvement of 0.03), consistent with these algorithms' greater sensitivity to irrelevant features.
+
+    \item \textbf{Interpretability reveals domain-consistent feature importance.} The SHAP analysis identified Flow Duration, InPktRate, OutByteRate, Bwd Packet Length Max, and Source Port as the five most discriminative features, all of which correspond to established indicators of malicious network behaviour in the cybersecurity literature. This semantic consistency validates the model's decision process and supports its operational trustworthiness.
+
+    \item \textbf{Hybrid architectures extend zero-day detection capability.} The Isolation Forest model detected 73\% of attack instances in unsupervised mode, providing meaningful zero-day detection capability as a complement to the supervised classifier. The LSTM temporal model improved detection of sequential attacks (DDoS, PortScan) by 2~percentage points over per-flow classification, demonstrating the value of temporal context in multi-step attack detection.
+
+    \item \textbf{The central research hypothesis is confirmed.} The application of systematic ML methods and data analysis to network traffic classification yields a system exceeding the predicted performance thresholds ($F_1 > 0.95$, $\mathrm{AUC} > 0.98$) and providing interpretable, analyst-accessible explanations suitable for operational deployment.
+\end{enumerate}
+
+\section{Scientific Contributions}
+
+The research makes the following contributions to the scientific literature:
+\begin{enumerate}
+    \item \textbf{A reproducible, modular preprocessing pipeline} for network intrusion detection datasets that jointly addresses class imbalance, feature redundancy, and data quality---providing a complete, end-to-end data engineering solution that can be applied to future IDS datasets.
+
+    \item \textbf{The most systematic published comparison of six ML algorithms} on CICIDS2017 using macro-averaged evaluation metrics with full per-class F1-score, Precision, and Recall breakdowns across all 14 traffic classes.
+
+    \item \textbf{A comprehensive SHAP and LIME interpretability analysis} demonstrating the operational applicability of ML explanation methods in an IDS analyst workflow context, including specific recommendations for alert triage and feature engineering derived from the interpretability findings.
+
+    \item \textbf{A concrete SIEM-compatible deployment architecture} that bridges the gap between academic model development and industrial operational practice, including data ingestion, classification engine, interpretability module, and platform integration specifications.
+
+    \item \textbf{Empirical evidence supporting the selection of LightGBM} as the optimal algorithm for network traffic multiclass classification under the constraints of high dimensionality, severe class imbalance, and real-time processing requirements, providing practitioners with evidence-based model selection guidance.
+\end{enumerate}
+
+\section{Practical Recommendations}
+
+Based on the research findings, the following recommendations are offered to organisations implementing ML-based intrusion detection systems:
+\begin{enumerate}
+    \item \textbf{Invest in data quality and preprocessing before model selection.} The experimental results demonstrate that preprocessing decisions---particularly class balancing and feature selection---have a larger impact on minority-class detection performance than algorithm choice. Organisations should allocate substantial development effort to the data engineering pipeline.
+
+    \item \textbf{Adopt LightGBM as the primary classifier for real-time network traffic classification.} Its combination of high accuracy, fast training, low inference latency, and native feature importance support makes it the most operationally suitable algorithm among those evaluated.
+
+    \item \textbf{Supplement supervised classification with Isolation Forest for zero-day detection.} A two-tier architecture combining LightGBM for known attack detection with Isolation Forest for anomaly-based novel threat detection provides substantially broader coverage than either component alone.
+
+    \item \textbf{Deploy SHAP explanations as standard alert metadata.} Providing analysts with the top contributing features for each alert, alongside their directional values, reduces investigation time and improves alert triage accuracy. This step is computationally inexpensive for tree-based models using TreeExplainer.
+
+    \item \textbf{Retrain models quarterly or upon detection of significant distribution shift.} The CICIDS2017 results may not generalise to traffic distributions observed beyond the 2017 capture period. Implementing automated distribution shift monitoring (e.g., population stability index tracking on feature distributions) provides an objective trigger for retraining.
+
+    \item \textbf{Calibrate alert thresholds per attack category.} Different attack categories have different consequences and different base rates. Using category-specific alert thresholds---higher for low-consequence, high-frequency categories and lower for high-consequence, rare categories---enables a more operationally rational precision--recall trade-off than a single global threshold.
+\end{enumerate}
+
+\section{Directions for Future Research}
+
+Several productive directions for future research emerge from this work:
+\begin{enumerate}
+    \item \textbf{Adversarial robustness evaluation and hardening.} The model's performance under adversarially crafted network traffic---flows deliberately constructed to evade detection by manipulating feature values while preserving attack functionality---has not been evaluated. Future work should assess adversarial vulnerability and implement defensive mechanisms such as adversarial training, randomised smoothing, or certified defences.
+
+    \item \textbf{Online and continual learning.} The current system retrains periodically on accumulated data. Future work should investigate online learning algorithms (e.g., Hoeffding Trees, online gradient boosting) that update the model incrementally as new traffic arrives, enabling continuous adaptation to evolving attack patterns without periodic batch retraining.
+
+    \item \textbf{Federated learning for multi-organisation threat intelligence sharing.} A federated learning architecture would enable multiple organisations to collaboratively train a shared detection model without exchanging raw traffic data, improving model robustness through exposure to diverse traffic distributions while preserving data privacy and regulatory compliance.
+
+    \item \textbf{Real-time streaming deployment and latency benchmarking.} The system architecture proposed in this thesis has not been implemented and benchmarked in a live streaming environment. Future work should deploy the pipeline using Apache Kafka for event streaming and measure end-to-end latency from packet capture to alert generation under realistic traffic throughputs.
+
+    \item \textbf{Graph-based network behaviour modelling.} Network attacks frequently involve coordinated behaviour across multiple source and destination nodes. Graph neural networks applied to network flow graphs---in which nodes represent IP addresses and edges represent flows---may capture relational attack patterns invisible to per-flow classifiers, particularly for botnet C\&C communication and lateral movement detection.
+
+    \item \textbf{Foundation models for cybersecurity.} Large pre-trained language and sequence models have shown remarkable transfer learning capabilities across diverse domains. Investigating whether pre-trained representations of network traffic sequences can be fine-tuned for IDS tasks with limited labelled data may address the fundamental challenge of rare attack class detection.
+
+    \item \textbf{Evaluation on post-2020 datasets.} As AI-assisted attack techniques become prevalent, evaluation on more recent datasets (e.g., CIC-IDS2018, UNSW-NB15, CICBellDNS2021) should be conducted to assess the generalisability of the methodology and model to contemporary threat landscapes.
+\end{enumerate}
+
+\section{Closing Statement}
+
+The increasing sophistication and scale of network attacks represent one of the defining technological challenges of the digital age. The research presented in this thesis demonstrates that properly engineered, interpretable machine learning systems can achieve near-human detection performance for known attack types while providing the transparency and operational integration necessary for real-world deployment. The LightGBM-based system, grounded in rigorous data engineering and validated through systematic experimental evaluation, offers a practical and scientifically well-founded contribution to the growing body of intelligent cybersecurity tools available to organisations seeking to defend their digital infrastructure against an evolving and increasingly capable adversary.
+
+The work also underscores that the most significant remaining challenges in ML-based intrusion detection are not primarily algorithmic but rather concern data quality, operational integration, analyst trust, and robustness to adversarial manipulation. Addressing these challenges will require sustained, interdisciplinary collaboration between the machine learning research community, cybersecurity practitioners, and organisational decision-makers---precisely the kind of collaboration that applied research programmes like Applied Data Analytics at Astana IT University are uniquely positioned to facilitate.

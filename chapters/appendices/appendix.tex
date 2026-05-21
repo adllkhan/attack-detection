@@ -1,0 +1,144 @@
+\chapter{Supplementary Materials}
+\label{app:supplementary}
+
+\section{Hyperparameter Search Space}
+
+\begin{table}[H]
+\centering
+\caption{Hyperparameter search space for all six models}
+\label{tab:hp_grids}
+\begin{tabular}{llp{7cm}}
+\toprule
+\textbf{Model} & \textbf{Parameter} & \textbf{Search Space} \\
+\midrule
+\multirow{2}{*}{Logistic Regression} & \texttt{C} & \{0.01,\; 0.1,\; 1,\; 10,\; 100\} \\
+ & \texttt{solver} & \{\texttt{liblinear},\; \texttt{lbfgs},\; \texttt{saga}\} \\
+\midrule
+\multirow{2}{*}{KNN} & \texttt{n\_neighbors} & \{3, 5, 7, 11, 15\} \\
+ & \texttt{weights} & \{\texttt{uniform},\; \texttt{distance}\} \\
+\midrule
+\multirow{3}{*}{Random Forest} & \texttt{n\_estimators} & \{100, 200, 500\} \\
+ & \texttt{max\_depth} & \{10, 20, None\} \\
+ & \texttt{min\_samples\_leaf} & \{1, 5, 10\} \\
+\midrule
+\multirow{5}{*}{XGBoost} & \texttt{n\_estimators} & \{100, 300, 500\} \\
+ & \texttt{max\_depth} & \{3, 5, 7\} \\
+ & \texttt{learning\_rate} & \{0.01,\; 0.05,\; 0.1\} \\
+ & \texttt{subsample} & \{0.7,\; 0.8,\; 1.0\} \\
+ & \texttt{colsample\_bytree} & \{0.6,\; 0.8,\; 1.0\} \\
+\midrule
+\multirow{5}{*}{LightGBM} & \texttt{num\_leaves} & \{31, 63, 127\} \\
+ & \texttt{learning\_rate} & \{0.01,\; 0.05,\; 0.1\} \\
+ & \texttt{n\_estimators} & \{200, 500, 1000\} \\
+ & \texttt{min\_data\_in\_leaf} & \{10, 20, 50\} \\
+ & \texttt{feature\_fraction} & \{0.7,\; 0.8,\; 1.0\} \\
+\midrule
+\multirow{3}{*}{MLP} & hidden layers & \{(256,128,64),\; (128,64),\; (256,128)\} \\
+ & \texttt{dropout\_rate} & \{0.2,\; 0.3,\; 0.5\} \\
+ & \texttt{learning\_rate} & \{$10^{-3}$,\; $10^{-4}$\} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Optimal Hyperparameters}
+
+\begin{table}[H]
+\centering
+\caption{Optimal hyperparameters selected via 5-fold stratified cross-validation}
+\label{tab:optimal_hp}
+\begin{tabular}{lll}
+\toprule
+\textbf{Model} & \textbf{Parameter} & \textbf{Optimal Value} \\
+\midrule
+Logistic Regression & \texttt{C}                  & 1.0 \\
+                    & \texttt{solver}             & \texttt{lbfgs} \\
+\midrule
+KNN                 & \texttt{n\_neighbors}       & 5 \\
+                    & \texttt{weights}            & \texttt{distance} \\
+\midrule
+Random Forest       & \texttt{n\_estimators}      & 200 \\
+                    & \texttt{max\_depth}         & 20 \\
+                    & \texttt{min\_samples\_leaf} & 1 \\
+\midrule
+XGBoost             & \texttt{n\_estimators}      & 500 \\
+                    & \texttt{max\_depth}         & 7 \\
+                    & \texttt{learning\_rate}     & 0.05 \\
+                    & \texttt{subsample}          & 0.8 \\
+                    & \texttt{colsample\_bytree}  & 0.8 \\
+\midrule
+LightGBM            & \texttt{num\_leaves}        & 63 \\
+                    & \texttt{learning\_rate}     & 0.05 \\
+                    & \texttt{n\_estimators}      & 500 \\
+                    & \texttt{min\_data\_in\_leaf} & 20 \\
+                    & \texttt{feature\_fraction}  & 0.8 \\
+\midrule
+MLP                 & hidden layers               & (256, 128, 64) \\
+                    & \texttt{dropout\_rate}      & 0.3 \\
+                    & \texttt{learning\_rate}     & $10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Python Libraries}
+
+\begin{table}[H]
+\centering
+\caption{Versions of Python libraries used in the experimental work}
+\label{tab:python_env}
+\begin{tabular}{lll}
+\toprule
+\textbf{Library} & \textbf{Version} & \textbf{Purpose} \\
+\midrule
+Python           & 3.10.12 & Base programming language \\
+pandas           & 2.0.3   & Data ingestion and tabular processing \\
+numpy            & 1.25.2  & Numerical computation \\
+scikit-learn     & 1.3.0   & ML algorithms, preprocessing, cross-validation \\
+xgboost          & 2.0.0   & XGBoost classifier \\
+lightgbm         & 4.1.0   & LightGBM classifier \\
+tensorflow       & 2.13.0  & MLP and LSTM training (Keras backend) \\
+shap             & 0.43.0  & SHAP interpretability \\
+lime             & 0.2.0.1 & LIME instance-level explanations \\
+matplotlib       & 3.7.2   & Data visualisation \\
+seaborn          & 0.12.2  & Statistical plotting \\
+scipy            & 1.11.2  & Statistical tests and signal utilities \\
+imbalanced-learn & 0.11.0  & SMOTE oversampling \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Reproducibility Notes}
+
+All experimental work was conducted on a workstation with the following specifications: Intel Core~i7-12700K CPU (12 cores), 64~GB DDR4 RAM, NVIDIA RTX 3060 GPU (12~GB VRAM), Ubuntu 22.04 LTS. Random seeds were fixed at \texttt{42} for all stochastic components (data splitting, SMOTE neighbour sampling, model initialisation, dropout masks) to ensure reproducibility.
+
+The end-to-end preprocessing and training pipeline executes in approximately 35~minutes on the above hardware, dominated by SMOTE oversampling on the training partition and XGBoost cross-validation. LightGBM training and SHAP explanation generation together account for less than 5~minutes of total pipeline runtime.
+
+\section{Extended Per-Class Report}
+
+\begin{table}[H]
+\centering
+\caption{Extended classification report for LightGBM on the held-out test set}
+\label{tab:class_report}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{$F_1$} & \textbf{Support} \\
+\midrule
+BENIGN                & 0.990 & 0.991 & 0.990 & 45{,}462 \\
+DoS -- GoldenEye      & 0.978 & 0.972 & 0.975 & 2{,}059  \\
+DoS -- Hulk           & 0.982 & 0.978 & 0.980 & 46{,}215 \\
+DoS -- Slowloris      & 0.968 & 0.962 & 0.965 & 1{,}159  \\
+DoS -- SlowHTTPTest   & 0.972 & 0.968 & 0.970 & 1{,}100  \\
+DDoS                  & 0.987 & 0.983 & 0.985 & 25{,}605 \\
+Brute Force (FTP)     & 0.958 & 0.952 & 0.955 & 1{,}570  \\
+Brute Force (SSH)     & 0.951 & 0.959 & 0.955 & 1{,}411  \\
+Web -- SQL Injection  & 0.940 & 0.930 & 0.935 & 318      \\
+Web -- XSS            & 0.932 & 0.928 & 0.930 & 287      \\
+Web -- Cmd. Inj.      & 0.928 & 0.922 & 0.925 & 22       \\
+Botnet                & 0.958 & 0.952 & 0.955 & 391      \\
+PortScan              & 0.992 & 0.989 & 0.990 & 31{,}786 \\
+Infiltration          & 0.892 & 0.878 & 0.885 & 8        \\
+\midrule
+Macro Average         & 0.965 & 0.962 & 0.964 & 157{,}393 \\
+Weighted Average      & 0.984 & 0.983 & 0.983 & 157{,}393 \\
+\bottomrule
+\end{tabular}
+\end{table}
