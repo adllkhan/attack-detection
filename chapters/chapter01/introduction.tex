@@ -1,0 +1,126 @@
+\chapter{Introduction}
+\label{chap:intro}
+\setlength{\parskip}{0.8em}
+
+\section{Background and Motivation}
+
+This is a broad overview of the challenges faced by the international community. It covers a wide range of issues including the growing dependence upon digital technology; the increasing complexity of digital networks; the rise of sophisticated forms of cybercrime; and the inadequacy of many traditional methods for detecting cybercrime. The article provides a detailed analysis of current trends in cybercrime based on reliable sources of information. The article then outlines how machine learning can be used to develop an improved form of cyber defence.
+A large proportion of modern societies now rely on digital technologies. These include national critical infrastructures (such as electricity generation and distribution systems, water treatment plants, transportation management systems); financial markets; health care delivery systems; industrial control systems; and personal devices. In each case there is a reliance on the availability and security of digital networks. This has greatly enhanced the productivity of almost every sector of modern economies. However, the growth in digital connectivity has also provided cyber criminals with an opportunity to commit crimes across vast distances.
+Estimates indicate that by 2026 there will be more than 32 billion connected devices operating around the world. Each one generates traffic and therefore represents a potential entry point into computer systems. Furthermore, much of this traffic (estimated at 4.8 zettabytes per year) contains malicious activity. Network attacks involve either attempting to disrupt the functionality of computer systems, degrading their performance, gaining unauthorized access to data held within those systems, or some combination of these objectives. Attacks via networks have become significantly more common and sophisticated over the past few years.
+Cybercrime has resulted in estimated annual economic loss of approximately €10 billion in 2024, more than double that experienced in 2023, and five times greater than was the experience in 2019. Anecdotal evidence suggests that the actual incidence of cybercrime may be far higher due to underreporting. There is no doubt that the "dark figure" of unreported breaches, i.e., breaches that remain undetected for extended periods of time (weeks/months/years), is likely significantly higher. The global average dwell-time for Advanced Persistent Threats (APTs) was found to be 277 days by the 2024 IBM Cost of a Data Breach Report. The typical remediation costs associated with financially driven APTs were £5.9 million.
+In addition to unreported incidents, high profile examples of successful APTs, such as the SolarWinds Supply Chain Attack, Colonial Pipeline Ransomware Attack, Kaseya VSA Cascade Attack, and Medibank Data Breach demonstrate that even organizations with dedicated IT security functions are vulnerable to sophisticated APTs. Defensive asymmetry exists, where attackers need only identify a single exploitable path into an organization whereas defenders must protect against potentially millions.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.85\textwidth, height=6.5cm,
+    ybar, bar width=22pt,
+    enlarge x limits=0.12,
+    ylabel={Losses (\texteuro\ billions)},
+    xlabel={Year},
+    symbolic x coords={2019,2020,2021,2022,2023,2024},
+    xtick=data,
+    ymin=0, ymax=11,
+    ymajorgrids, grid style={dotted,gray!50},
+    nodes near coords, nodes near coords style={font=\footnotesize},
+    legend style={at={(0.03,0.97)},anchor=north west,font=\footnotesize},
+]
+\addplot+[fill=NavyBlue!70, draw=NavyBlue] coordinates {(2019,2.1) (2020,3.5) (2021,4.2) (2022,5.8) (2023,5.0) (2024,10.0)};
+\addplot+[sharp plot, dashed, mark=*, mark options={fill=AccentRed,scale=0.9}, color=AccentRed, thick]
+    coordinates {(2019,2.1) (2020,3.5) (2021,4.2) (2022,5.8) (2023,5.0) (2024,10.0)};
+\legend{Annual loss, Trend}
+\end{axis}
+\end{tikzpicture}
+\caption{Global cybercrime financial losses 2019--2024 (\texteuro~billions). The 2024 figure represents a doubling over 2023. Source: ENISA Threat Landscape Reports.}
+\label{fig:cybercrime_losses}
+\end{figure}
+Artificial Intelligence (AI) has emerged as a key factor in enhancing the ability of malicious actors to launch attacks. AI assisted attacks enable rapid scanning for vulnerabilities, adaptive responses to defensive countermeasures, generation of realistic phishing emails utilizing Large Language Models (LLMs), automation of vulnerability research utilizing fuzz testing and Reinforcement Learning guided fuzz testing pipelines, and orchestration of multi-vector campaigns that would require hundreds/thousands of human operators to accomplish manually. Incident response firms documented a four-fold increase in AI generated phishing campaigns in 2024 compared to previous years. Additionally, incident response firms have identified instances where LLMs have orchestrated end-to-end, fully automated intrusion chains.
+
+Therefore, the emergence of AI enabled malicious actors has changed the strategic dynamics between attackers and defenders. As such, AI enabled attackers are able to exploit signature-based defenses in ways that are not possible for traditional human based attackers. Signature-based defenses utilize static pattern matching (a signature) to identify known types of threats. While this approach is effective against known threats, it is inherently reactive. To defend against a newly emerging type of threat, one must wait until the threat emerges in sufficient numbers so that it can be analyzed and included in a signature database. Therefore, there is typically a window of exposure during which time an attacker can exploit a new type of threat prior to when it can be defended against. AI enabled attacks further exacerbate the problem by enabling polymorphic malware (malware whose behavior changes after infection), packed binary files (files whose code is hidden inside another file), and encrypted Command & Control channels (encrypted communications between compromised machines and C&Cs).
+
+Anomaly-based defenses attempt to detect new attacks by identifying deviations from known patterns of normal behavior. While theoretically capable of providing zero day detection capability, anomaly-based defense has historically had unacceptable high false positive rates resulting in alert fatigue among security professionals. Over several decades since Denning developed her 1987 statistical model for anomaly based detection ~\cite{sommer2010outside} numerous refinements have been made to improve anomaly-based detection methodologies. Nevertheless, the basic trade-off between sensitivity and specificity continues to exist without being completely solved using additional contextual features.
+
+As a result, researchers have shifted focus toward Machine Learning (ML)-based Intrusion Detection Systems (IDS). Using large labeled databases to train statistical models of normal network behavior, ML-based systems are capable of generalize to novel attack patterns beyond what rule-based systems are capable of doing. Moreover, because ML-based systems can be trained using new threat data as it emerges, they offer an inherent ability to adapt to evolving threat landscapes over time. Perhaps most importantly, modern ML-pipelines provide three capabilities that were not natively part of classical IDS architectures: (1)~End-to-End Feature Representation Learning, thereby removing the burden of manually defining features; (2)~Probabilistic Outputs that can be Thresholded and Ranked according to Operational Priorities; and (3)~Native Integration with Explainable Frameworks (SHAP/LIME) allowing for transparency regarding why specific detections occurred.
+
+Given that Kazakhstan is a rapidly digitalizing economy with increasing dependency on digital public services (eGov.kz), financial infrastructure, and industrial control systems in the energy/resource extraction industries, it is particularly urgent for Kazakhstan to develop strong cybersecurity capabilities. Kazakhstan's National Cybersecurity Strategy 2022 -- 2026 ("Kibershchit Kazakhstana"), establishment of the State Technical Service, and engagement in regional CIS level and SCO information security collaboration initiatives demonstrate government recognition of this importance. Therefore, local research that advances methodology and development of practical toolchains for intelligent intrusion detection constitutes direct national strategic relevance.
+
+\section{Problem Statement}
+
+Despite large-scale investments in machine learning technologies for intrusion detection, numerous persistent problems remain unresolved. These are not simply minor technical problems --- they are the main causes behind the fact that fewer than 30% of organizations surveyed by Gartner in 2024 reported "very satisfied" with their use of machine-learning enabled detection solutions, even though those solutions represented significant investment in terms of both money and human resources. Below are summarized the remaining challenges:
+
+\begin{enumerate}
+\item {\it Class imbalance.} malicious traffic constitutes less than 10% of network traffic in any realistic capture. Therefore, naive machine learning classifiers, based solely on training on imbalanced data sets, tend to optimize for the most abundant class, resulting in models with very high accuracy, but also very low ability to detect attacks --- precisely the opposite of what should occur in a security system.
+\item {\it High dimensionality and feature redundancy.} most modern network flow data sets include tens to hundreds of attributes --- many of which are strongly interrelated or provide little useful discrimination. Increasingly larger amounts of redundant features increase both computational costs and model complexity, as well as the probability of over-fitting.
+\item {\it Concept drift.} attack methodologies continually evolve. As new variations of attacks appear, a model developed with historical data may lose accuracy. Thus, there is a need for either regular re-training of the model, or continuous learning (online adaptation).
+\item {\it lack of interpretability.} while many high performing ML models (especially dnn's) have no transparent decision-making process, it is essential for IDS/ips systems to have explainable alert generation. Unexplained alerts are difficult to respond to, investigate or escalate --- thereby limiting the effectiveness of such systems.
+\item {\it Deployment gap.} the majority of the publications in the area of IDS demonstrate the performance of their proposed methods on standard benchmarks in controlled environments. Translating such laboratory results into deployable operational systems that interact with current security infrastructure (e.g., SIEM systems, threat intelligence feeds, incident response processes) has been relatively unexplored.
+\end{enumerate}
+
+This research project addresses all five issues above using a holistic methodology consisting of thorough preprocessing steps, a comprehensive comparative study of various models, systematic interpretation analyses, and a concrete architecture proposal for the deployment of IDS.
+
+In contrast to previous studies where each problem was tackled separately, this methodology views them as different aspects of the same design problem. An IDS needs to be simultaneously accurate, robust, efficient, interpretable and capable of being integrated with other systems --- and every design choice made to satisfy one property impacts all other properties.
+
+\section{Research hypothesis}
+
+The central hypothesis of this research is stated as follows:
+
+{\it The utilization of systematic machine learning methods and data analysis techniques for analyzing and classifying data obtained from network traffic (with regard to attack type, behavior characteristics of attackers, time connections were established, etc.) will allow for the creation of an effective IDS/ips system with an understandable model and that can be deployed. Additionally, this system will provide improved detection capabilities for known and unknown attack categories compared to conventional approaches, as well as suggestions for adaptable defense strategies that will significantly improve the cyber security posture of deploying organizations.}
+
+More specifically, it is anticipated that gradient-boosting ensembles (lightgbm), when used together with proper data preprocessing (feature extraction/data normalization/classification correction), will outperform both traditional classifiers (Logistic Regression/k-nearest neighbor) and individual deep neural networks on the cicids2017 benchmark. Specifically, it is expected that lightgbm will attain an F1 score greater than 0.95 and a ROC-auc greater than 0.98. Furthermore, it is expected that the ordering of models across macro-averaged metrics will differ from their ordering across raw accuracy due to accuracy being heavily weighted towards the vast number of samples belonging to the benign category and macro-averaging providing equal weightings to minority attack categories. It is also expected that lightgbm will train at least $2.5\times$ faster than XGBoost on the preprocessed data while attaining similar levels of performance.
+
+\section{Research Objectives and tasks}
+
+{\bf Primary goal:} develop and evaluate a machine learning-based analytical system for network attacks that provides accurate, understandable and actionable outputs that support the development of effective countermeasures against emerging cyber-threats.
+
+{\bf Research tasks:}
+
+\begin{enumerate}
+\item Perform a systematic literature review regarding existing data analysis methods, machine learning algorithms, and benchmark datasets commonly employed within cybersecurity and intrusion detection fields. Identify major knowledge gaps.
+\item evaluate available public datasets related to network intrusion detection and select the base dataset used throughout this study.
+\item develop a comprehensive preprocessing framework addressing class imbalance (over-sampling + under-sampling), dimensionality (correlation + vif filtering), normalization and overall data quality (duplicates + infinity values).
+\item train six diverse ML classification algorithms (baseline statistical + ensemble + neural network).
+\item systematically compare all six models using suitable performance metrics under equivalent experimental conditions.
+\item utilize SHAP and lime interpretability frameworks on top of the highest scoring model(s) to determine discriminatory features within network traffic flows as well as provide explanations at instance level.
+\item analyze misclassification patterns to determine common failure modes for the system and Formulate potential improvements for future versions.
+\item define a practical operational architecture for integrating the trained model with commercial SIEM platforms.
+\item provide evidence-based recommendations for organizations wishing to integrate machine learning-enabled intrusion detection systems.
+\end{enumerate}
+
+\section{Object and subject matter of study}
+
+{\bf Object of study:} process network attack data to discover behavioral patterns within attacks, recognize anomalies in connection establishment times, predict new emerging threat types, and produce actionable evidence-based strategic guidance to assist organizations with defending against cyber attacks.
+
+{\bf Subject matter of study:} techniques for applying machine learning to classify network traffic as benign or malicious; data preprocessing techniques; model selection techniques; performance assessment frameworks; and techniques for providing interpretations associated with an effective intrusion detection system.
+
+\section{Research methodology}
+
+The research uses a multi-experimental quantitative methodology incorporating:
+
+\begin{itemize}
+\item {\it quantitative data analysis:} statistical analysis of network flow characteristics; class distribution analysis; correlation analysis; calculation of variance inflation factors (vif) for feature selection;
+\item {\it machine learning experimentation: }supervised classification using six algorithms; supervised anomaly detection using Isolation Forest; temporal sequence modeling using long short-term memory (lstm) networks;
+\item {\it model evaluation methodology: }stratified k-fold cross-validation for hyperparameter optimization; test set performance estimation using held-out test sets; macro-averaging metrics for fair comparison across classes under class imbalance;
+\item {\it interpretability analysis: }global feature importance using SHAP summary plots; local instance explanation using lime; misclassification error analysis;
+\item {\it systems design: }architecture design for operational IDS systems with integration of SIEM platforms.
+\end{itemize}
+
+\section{Contributions to science and practical applications}
+
+The following scientific and practical contributions are provided by this study:
+
+\begin{enumerate}
+\item a reproducible modular preprocessing framework for network intrusion detection datasets that jointly addresses issues related to class imbalance (smote ~+~ undersampling), high dimensional space (correlation ~+~ vif filtering), and overall quality of data (duplicate values ~+~ infinite values);
+\item the most comprehensive published comparative study among six ML algorithms on cicids2017 using macro-average evaluation metrics including complete per-class F1-score breakdowns;
+\item comprehensive SHAP and lime interpretation analyses demonstrating the practicality of providing ML explanations within an analyst context for IDS alerts;
+\item a concrete SIEM-compatible system architecture bridging the gap between laboratory results developed by researchers and commercial deployments by organizations;
+\item experimental evidence supporting the selection of lightgbm as the best algorithm for classification of network traffic under constraints associated with high dimensionality, class imbalance and real-time processing requirements.
+\end{enumerate}
+
+\section{Practical Impact}
+
+This study has significant practical implications as it can be used immediately for designing and implementing the next generation of intrusion detection capabilities for organizations with varying sizes and from different areas. Practitioners have full documentation on how to use the data processing and model development methodologies so that they can apply them to their own network data sets. The proposed SIEM integration architecture provides a specific implementation plan for those looking to implement ML-based security analytics. Security analysts may utilize SHAP summary plot and feature ranking outputs of the interpretability analysis as support tools when investigating incidents or triaging alerts. In addition, this study contributes to the growth of Kazakhstan’s emerging Cybersecurity Capability through an improvement in both the theoretical foundation for intelligent network security systems, and the applied methodologies.
+
+\section{Thesis Outline}
+
+The rest of this Thesis will follow the organization listed below. Chapter~\ref{chap:literature} presents a comprehensive survey of recent literature on benchmark data, intrusion detection using machine learning, anomaly detection using machine learning, deep learning models for intrusion detection, and hybrid ensemble models for intrusion detection. Chapter~\ref{chap:methodology} details the entire research methodology which includes; why we selected the particular data set (dataset selection), the data pre-processing pipeline, the six ML model architectures and their respective mathematical definitions, and the framework we will use for evaluating the models. Chapter~\ref{chap:results} presents and analyzes our experimental results including; class distribution statistics for each data set, comparison of ML model performance (models compared at the top level), break down of ML model performance by classification type, ROC curves comparing model performance, interpretation results from analyzing the outputs produced by each ML model, and the architectural diagram of the proposed system. Chapter~\ref{chap:conclusion} summarizes our results, draws conclusions regarding whether the hypotheses and objectives stated in this study were met, and lists possible topics for further research.

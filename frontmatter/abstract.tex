@@ -1,0 +1,28 @@
+\chapter{Abstract}
+
+\begin{SingleSpace}
+
+\noindent \textbf{Title:} Development of a System for Analyzing Data on Network Attacks to Create Effective Strategies to Protect Against New Threats.\\
+
+\textbf{Author:} Milana Dulatovna Muratbekova.\\
+
+\textbf{Year:} 2026.
+
+\vspace{0.8em}
+\noindent As cyberattacks against public sector organizations, banks, and other areas of critical infrastructure have increased dramatically in recent years, traditional security systems based on signatures or rules alone have been unable to provide adequate protection against such modern types of attacks. Because of this, there has recently been a surge in developing data-driven approaches as well as those based on machine learning for enhancing the detection capabilities of intrusion detection systems.
+
+\noindent This thesis will present the development of a complete machine learning pipeline for the analysis of network attack data. In order to be able to develop an effective pipeline, I had to preprocess the CICIDS2017 dataset through various means; including, but not limited to, removing duplicate records, performing z-score normalization, taking logarithms of all skewed features, reducing the number of features from 80 down to 74 by utilizing both correlation and VIF techniques to determine which features should remain, and finally correct class imbalance using SMOTE followed by random undersampling.
+
+\noindent I then tested six different supervised classification algorithms: logistic regression, K-Nearest Neighbor (KNN), Random Forest, eXtreme Gradient Boosting (XGBoost), Multi-Layer Perceptron (MLP), and LightGBM. Among these classification algorithms, LightGBM yielded the best results (accuracy~$\approx$~0.98, F1~$\approx$~0.97, ROC-AUC~$\approx$~0.99). Moreover, it produced the shortest training times out of all the gradient boosting models ($\sim$89 seconds compared to XGBoost's $\sim$317 seconds); thus validating LightGBM's advantages in terms of speed due to its use of leaf-wise tree growth and histogram-based gradient computations when analyzing high-dimensional tabular traffic data.
+
+\noindent SHAP global and LIME local explanations were utilized to identify the top four most important discriminative flow features. These flow features included flow duration, incoming packet rate, outgoing byte rate, and concurrent connections per source IP. Isolation forests were also employed to perform unsupervised clustering on previously unseen flow data. Furthermore, long short-term memory (LSTM) neural networks were utilized to model temporal relationships found in sequential flows. All of the aforementioned methods were integrated into a hybrid architecture for identifying novel patterns in sequential flow data. Finally, a system architecture was described for deploying the trained model directly onto commercial SIEM platforms for enabling real-time detection and providing explanations during incident management. Overall, the research presented here supports the central hypothesis that machine learning can provide accurate, interpretable, and deployable intrusion detection systems.
+
+\vspace{0.8em}
+
+\keywords{network intrusion detection, machine learning, LightGBM, XGBoost, SHAP, LIME, cybersecurity, anomaly detection, SIEM integration, gradient boosting, feature importance, network traffic analysis.}
+
+\vspace{0.8em}
+
+\noindent \textbf{Volume:} 5 chapters, 21 figures, 10 tables, 21 references, 52 pages.
+
+\end{SingleSpace}

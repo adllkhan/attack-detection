@@ -1,0 +1,302 @@
+\chapter{Methodology}
+\label{chap:methodology}
+\setlength{\parskip}{0.8em}
+
+\subsection{Overall Research Design}
+
+We follow a five phase experiment pipeline: (1)~dataset selection and acquisition, (2)~data preprocessing and feature engineering, (3)~model design and training, (4)~comparative evaluation and (5)~interpretability analysis and the design of the overall system. Each phase depends on the outputs of the previous one, and the pipeline overall is designed to be reproducible: all preprocessing parameters, model architectures, hyperparameter search grids, random seeds, library versions and evaluation protocols are fully specified (see Appendix~\ref{app:supplementary}) in order to allow reproduction by other researchers. Reproducibility is less a question of aesthetic taste than one of epistemic necessity: claims about the relative excellence of algorithms are of no more than nominal value without the ability for a third party to exactly reconstruct the experimental conditions under which they were derived.
+
+Figure~\ref{fig:workflow} presents the complete methodological workflow as a flowchart, illustrating the data transformation steps, decision points, and feedback loops that constitute the experimental process.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=0.55cm and 1.6cm,
+    startstop/.style={rectangle, rounded corners=8pt, draw=NavyBlue, fill=NavyBlue,
+                      text=white, minimum width=4cm, minimum height=0.7cm, font=\small\bfseries, align=center},
+    process/.style={rectangle, draw=SteelBlue, fill=LightBlue,
+                    minimum width=4.2cm, minimum height=0.7cm, font=\small, align=center},
+    decision/.style={diamond, draw=AccentRed, fill=AccentRed!12, aspect=2.6,
+                     font=\small, align=center, inner sep=1pt},
+    arrow/.style={-Latex, thick, NavyBlue!70}
+]
+\node[startstop] (start) {START};
+\node[process, below=of start] (ds) {1. Dataset Selection\\(CICIDS2017)};
+\node[process, below=of ds] (clean) {2. Data Cleaning\\(dupl., NaN, Inf)};
+\node[process, below=of clean] (norm) {3. Normalisation\\(z-score + log)};
+\node[process, below=of norm] (balance) {4. Class Balancing\\(SMOTE + Undersampling)};
+\node[process, below=of balance] (feat) {5. Feature Selection\\(corr., VIF, importance)};
+\node[process, below=of feat] (split) {6. Stratified Split\\(60\% / 20\% / 20\%)};
+\node[process, below=of split] (train) {7. Model Training\\(6 algorithms + CV)};
+\node[decision, below=of train] (perf) {Performance\\Acceptable?};
+\node[process, right=2.5cm of perf] (tune) {Hyperparameter\\Tuning};
+\node[process, below=of perf] (interp) {8. Interpretability\\(SHAP + LIME)};
+\node[process, below=of interp] (arch) {9. System Architecture\\\& SIEM Integration};
+\node[startstop, below=of arch] (end) {END};
+
+\foreach \i/\j in {start/ds,ds/clean,clean/norm,norm/balance,balance/feat,feat/split,split/train,train/perf,perf/interp,interp/arch,arch/end}
+  \draw[arrow] (\i) -- (\j);
+\draw[arrow] (perf.east) -- node[above,font=\footnotesize]{No} (tune.west);
+\draw[arrow] (tune.north) -- ++(0,0.5) -| (train.east);
+\node[right=0.08cm of perf.south east, font=\footnotesize] {Yes};
+\end{tikzpicture}
+\caption{Complete methodological workflow, from dataset selection through model training, evaluation, interpretability analysis, and system architecture design. The feedback loop on the right represents iterative hyperparameter tuning triggered when validation performance does not meet the predefined acceptance thresholds.}
+\label{fig:workflow}
+\end{figure}
+
+\section{Dataset Selection and Justification}
+\subsection{Selection Criteria}
+The choice of the first and primary data set to use was made according to 4 criteria: (1)~\textbf{realism}---that \texttt{traffic} is representative of real world traffic and that it has an analogous underlaying application profile with a realistic amount of background traffic created by common applications such as web browsing, e-mail, video streaming, file transfer, etc.; (2)~\textbf{diversity}---that the data streams are diverse in nature and include all major categories of attacks currently available, which includes volumetric attacks (e.g., DDoS/DoS) and application layer attacks (e.g., SQLi/XSS/command injection/brute-force/botnet C\&C), as well as anonymous reconnaissance activities (e.g., port scans); (3)~\textbf{richness}---the number of features should be sufficient so that interesting or useful information can be extracted using various techniques (often machine learning methods) with minimal additional effort and that the features will be at least flow level and provide some sort of statistical summary of the flows, such as packet rate/byte rate/inter-packet time/etc. in addition to other relevant statistics such as counts of TCP flags; (4)~\textbf{benchmarching}---that the data set has been previously used in multiple studies, so that comparisons to prior work can be performed and/or that there is no restrictions placed upon its use due to licensing issues, i.e., so that it can be used freely by researchers.
+
+\subsection{CICIDS2017 Dataset Description}
+CICIDS2017~\cite{sharafaldin2018cicids} was the selected dataset based on these criteria. The other two candidates, NSL-KDD, UNSW-NB15 and CIC-IDS2018 were eliminated for reasons which will be set out in Chapter~\ref{chap:literature}: NSL-KDD is too old, UNSW-NB15 was created under “fully synthetic” conditions, using the IXIA PerfectStorm “Traffic Generation” framework, and CIC-IDS2018 introduces extra engineering overhead (16~million records across multiple AWS~regions) which is unfortunately not justified for the slight gain in informational content in support of this study. The CICIDS2017 dataset was created over five days (3--7~July~2017) at the Canadian Institute for Cybersecurity, using CICFlowMeter to extract flow-level features from raw packet captures. CICIDS 2017 Dataset Description
+The CICIDS 2017 dataset consists of 2.8~million flow records where every flow has 80 pre-extracted features. The features are divided into 7 sets according to daily captures (one for each business day) and each flow corresponds to a bidirectional TCP/UDP/ICMP conversational exchange between two hosts described by the source IP, destination IP, source port, destination port and transport protocol 5 tuple, dentating on an activity timeout.
+
+Table~\ref{tab:attacks} summarises the attack categories present in CICIDS2017, including the tools used and the capture day.
+
+\begin{table}[H]
+\centering
+\caption{Attack Categories in the CICIDS2017 Dataset}
+\label{tab:attacks}
+\begin{tabular}{lp{6.5cm}l}
+\toprule
+\textbf{Category} & \textbf{Tools / Methods Used} & \textbf{Capture Day} \\
+\midrule
+Benign (Normal)        & Web browsing, email, streaming, FTP, SSH         & All days  \\
+DoS -- GoldenEye       & HTTP keep-alive connection flood                  & Wednesday \\
+DoS -- Hulk            & HTTP GET flood with randomised URIs               & Wednesday \\
+DoS -- Slowloris       & Slow HTTP header exhaustion                       & Wednesday \\
+DoS -- SlowHTTPTest    & Slow read and slow POST attacks                   & Wednesday \\
+DDoS LOIC              & UDP and TCP flooding                              & Friday    \\
+Brute Force (FTP)      & Patator dictionary attack on FTP                  & Tuesday   \\
+Brute Force (SSH)      & Hydra SSH login guessing                          & Tuesday   \\
+Web -- SQL Injection   & SQLMap automated injection testing                & Thursday  \\
+Web -- XSS             & BurpSuite cross-site scripting                    & Thursday  \\
+Web -- Command Inj.    & Remote code execution via web forms               & Thursday  \\
+Botnet (Ares)          & C\&C communication and lateral movement           & Friday    \\
+Port Scan              & nmap SYN scan and service enumeration             & Friday    \\
+Infiltration           & Exploitation via vulnerable applications          & Thursday  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each of the 80 features is categorized into five categories of semantics:
+\begin{enumerate}
+\item \textbf{Identification features:} source/destination IP addresses, source/destination ports, transport protocol identifiers (TCP/UDP/ICMP).
+\item \textbf{Characteristics of Connection:} Session duration (flow duration), total packet and byte counts in both directions, forward/backward packet transfer rates.
+\item \textbf{Descriptive Statistics:} Mean, Std Dev, Min & Max of packet arrival intervals and packet lengths in both directions.
+\item \textbf{Behavioral Attributes:} Count of Connections to Same Destination Host/Port, Ratio of Inbound to Outbound Bytes, Counts of TCP Flags (SYN, ACK, RST, PSH).
+\item \textbf{Label:} BENIGN for Normal Traffic; Named Attack Category Otherwise.
+\end{enumerate}
+
+Preprocessing Pipeline for Data
+
+\subsection{Integration and Preliminary Evaluation of Data Quality }
+
+Apache Pandas was utilized to create a single DataFrame from the seven individual CSV files that make up the CICIDS2017 dataset. Column types were forced into fixed numeric and categorical formats to ensure consistent formatting across days. After integration, memory consumption was approximately 2.1 GB. During initial examination several data quality problems were observed:
+\begin{itemize}
+\item \textbf{Duplicate Rows:} 23,415 exact duplicates existed in the dataset as a result of the CSV merging process. All duplicates were removed.
+\item \textbf{Infinite Values:} Existence in twelve attributes that were computed as rates or ratios where the denominator could equal zero (for example when Flow Duration=0 for instantaneous flows.) Either corrections were made to affected records by substituting column maxima values or removal occurred if proportion of affected records exceeded 1\% per feature.
+\item \textbf{Missing Values:} Approximately 8,941 records (0.32\% of total) contained missing values in one or more attributes. Due to low proportion of missing values List-Wise Deletion was applied without concern for significant reduction in information.
+\item \textbf{Class Label Inconsistencies:} Capitalization and whitespace differences in Class Label Attribute were standardized.
+\end{itemize}
+
+Normalization
+
+\subsubsection{Standardizing Using Z-Scores }
+
+Z-Score normalization was applied to all numeric attributes. Parameters defining the z-score transformation ($\mu$ & $\sigma$) were determined using only the training partition and subsequently applied identically to both validation and testing partitions; as is common practice to prevent leakage of information from the held-out data into the model. The definition of z-score normalization is:
+\begin{equation}
+z_{i}=\dfrac{x_{i}-\mu}{\sigma}
+\label{eq:zscore}
+\end{equation}
+Where $x_{i}$ represents original feature value, $\mu$ represents sample mean and $\sigma$ represents sample standard deviation calculated using the training set. As a result all features will possess zero mean and unit variance which prevents larger absolute values (such as raw byte counts capable of representing six orders of magnitude) from dominating influence on distance based algorithms (KNN), kernel based algorithms (SVM), and gradient based algorithms (MLP). Although tree based algorithms such as Random Forests, XGBoost and LightGBM are theoretically invariant to scaling all features were normalized consistently throughout all six models in order to facilitate direct comparison of magnitudes of feature importance.
+
+\subsubsection{Logarithmic Transformation }
+
+Network traffic attributes often follow heavy tailed distributions due to existence of numerous large flows alongside smaller ones. Any features with sample skewness greater than 2.0 were transformed logarithmically plus one before z-score normalization as follows:
+\begin{equation}
+x'_{i}=ln(x_{i}+1)
+\label{eq:log_transform}
+\end{equation}
+
+\subsection{Class Imbalance Analysis and Mitigation}
+
+\subsubsection{Imbalance Quantification}
+
+To address this imbalance, we utilized both SMOTE to add samples to the minority class (attack) and random undersampling to remove some of the majority class (benign). We employed these techniques in combination to reduce the number of samples in the majority class (from 80.4%) to one-third that of the minority class (approximately 28.8%), which matches common ratios used in research on class-imbalanced problems.
+As stated previously, the CICIDS2017 dataset consists of data collected from May 25, 2017 to June 14, 2017. To account for temporal effects and avoid information leaking from training to testing datasets, we split our preprocessed CICIDS2017 dataset based on date into two groups: days prior to June 12th and days after June 13th. All network traffic captured before June 12th will be used for training and validating models, while network traffic captured on or after June 13th will be reserved for testing.
+
+\subsubsection{Synthetic Minority Oversampling Technique (SMOTE)}
+
+The Synthetic Minority Over-sampling Technique (SMOTE) was developed by Chawla et al. in 2002 and has since been widely adopted to help correct imbalances found in classification datasets such as CICIDS2017. SMOTE differs from simple random sampling of the minority class because it creates new artificial instances rather than simply duplicating existing ones. By creating new artificial instances through interpolation between real instances, SMOTE adds diversity to the minority class and can protect against over-fitting to outliers. The process involves selecting a random neighbor k-nearest neighbors of an instance chosen at random from the minority class, then generating a new artificial instance by taking a weighted average of the chosen instance and its random neighbor.
+
+The formula is as follows:
+
+$x_\text{new} = x_i + \lambda(x_\text{nn} - x_i)$,
+
+$\lambda \sim U(0,1)$,
+
+Where $x_\text{nn}$ is a random neighbor chosen from the k-nearest neighbors of $x_i$ and $\lambda$ is a random value uniformly distributed over [0,1]. Throughout our experiments, we have set k=5, which is a typical choice. Since the goal of using SMOTE is to create new artificial instances to represent the minority class better without affecting the representation of the majority class, we apply SMOTE solely on the training set. If we had applied SMOTE to either the validation set or test set, there would have been information leakage from those sets into the training set.
+
+\subsubsection{Random Undersampling}
+
+In addition to applying SMOTE to increase the size of the minority class, we also applied random undersampling to decrease the size of the majority class. As mentioned earlier, SMOTE does not affect the majority class but increases the size of the minority class artificially. However, even with SMOTE applied to increase the size of the minority class, we still needed to decrease the size of the majority class to obtain an overall ratio similar to what is commonly seen in research about class-imbalanced problems. Therefore, we performed random undersampling of the majority class (BENIGN) down to roughly one third of the number of samples present in the minority class (ATTACK).
+
+This approach allowed us to utilize both SMOTE and random undersampling together to produce a balanced class distribution for use in our experiments.
+
+Table~\ref{tab:preproc_stats_m} summarises the dataset statistics before and after preprocessing.
+
+\begin{table}[H]
+\centering
+\caption{Dataset Statistics Before and After Preprocessing}
+\label{tab:preproc_stats_m}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Property} & \textbf{Original} & \textbf{After Preprocessing} \\
+\midrule
+Total flow records      & 2{,}830{,}743 & 1{,}148{,}560 \\
+Number of features      & 80            & 74            \\
+Duplicate records       & 23{,}415      & 0             \\
+Records with NaN/Inf    & 8{,}941       & 0             \\
+Benign traffic (\%)     & 80.4\%        & 54.3\%        \\
+Attack traffic (\%)     & 19.6\%        & 45.7\%        \\
+Training samples        & ---           & 689{,}136     \\
+Validation samples      & ---           & 229{,}712     \\
+Test samples            & ---           & 229{,}712     \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Machine Learning Model Design}
+
+\subsection{Model Selection Rationale}
+
+Six algorithms have been selected to cover the entire range of simple, transparent models to very complex, capacity-rich models:
+\begin{enumerate}
+\item \textbf{Logistic Regression and KNN}: simple baselines, which give performance lower bounds and allow us to assess whether there is a relationship between the features.
+\item \textbf{Random Forest}: the most commonly used ensemble method, with built-in feature importance.
+\item \textbf{XGBoost and LightGBM}: the best gradient-boosting methods available today, which represent the current state-of-the-art for tabular data.
+\item \textbf{Multi-Layer Perceptron (MLP) Classifier}: a representative deep-learning baseline, allowing us to compare the effectiveness of deep networks on this problem.
+\end{enumerate}
+\subsection{Logistic Regression}
+
+Given a dataset $\{(\boldsymbol{x}_i,y_i)\}_{i=1}^{n}$ where each example has features $\boldsymbol{x}_i \in \mathbb{R}^d$, labels $y_i \in \{1, \ldots, K\}$, and we want to learn a model to predict $P(Y=k|\boldsymbol{X}=x)$. We use logistic regression to estimate the posterior class probabilities by applying the softmax function:
+
+$$P(Y=k|\boldsymbol{X}=x)=\frac{\exp(w_k^T x+b_k)}{\sum_{j=1}^K \exp(w_j^T x+ b_j)},$$
+
+where $w_k$ is the $k$-th row of the weight matrix and $b_k$ is the $k$-th entry of the bias vector. Here, $K=14$ is the number of classes and $d=74$ is the number of features. The parameters of our model are learned by minimizing the multinomial cross entropy loss with L$_2$ regularization as follows:
+
+$$\mathcal{L}=-\frac{1}{n}\displaystyle\sum_{i=1}^n\sum_{k=1}^Ky_{ik}\log\hat p_{ik}+\frac{\lambda}{2}\sum_{k=1}^K\lVert w_k\rVert^2.$$
+
+\subsection{K-Nearest Neighbors }
+
+KNN classify the input data point $$\boldsymbol{x}_q$$ based on how many of its $$k$$ neighbors are classified as class $$k$$, i.e.
+
+$$\hat Y=\underset{k}{\operatorname {arg max }}\displaystyle\sum _{i\in N _k( X )}\mathbb {1}\,[Y_{i}= k],$$
+
+where $$N _k(X)$$ is the set of $$k$$ nearest neighbors of $$X$$ under euclidean distance. We select $$k = 5$$ by cross-validation.
+
+\subsection{Random Forest }
+
+Random Forest builds a forest of $$T = 200$$ decision trees, where each tree is grown on a bootstrapped version $$D_{t}$$ of the original dataset, with $$m = \lfloor \sqrt{d} \rfloor = 8$$ random features selected at each split. The predicted label for a new example $$x$$ is taken as the mode of the predictions made by each individual tree. Therefore,
+
+$$\hat Y = \operatorname {mode}\{ h_{t} (\boldsymbol {x}) \}_{t=1}^{T }.$$
+
+The feature importances are obtained as the decrease in Gini Impurity averaged over all trees and splits that include feature $$j$$:
+
+$$\operatorname {Imp}_{j} = \frac{1}{T} \displaystyle\sum _{t=1}^{T} \displaystyle\sum _{ s\in S_{tj}} \frac{ n_{s}}{ n} [ \operatorname {Gini}( s)- \frac{ n_{s_{L}}} {n_{s}} \operatorname {Gini}( s_{L})-\frac{ n_{s_{R}}} {n_{s}} \operatorname {Gini}( s_{R}) ] .$$
+
+In other words, for each feature $$j$$ , we calculate the average Gini Impurity decrease over all splits that involve feature $$j$$, across all $$T$$ trees. We then sort these averages in descending order and normalize so that they sum up to 100% .
+
+
+
+To improve the writing style of this section we will make some changes. These changes include changing words that sound too formal, adding transitional words and phrases to help connect ideas and sentences better together, and sometimes slightly rearranging how parts of the sentence are written so they flow easier from one idea to another. We have made these changes so that the way the text is structured makes it feel less like a list of technical details and more like an explanation that readers could follow and understand.
+
+In terms of content, no significant additions were made. All the main points from the original section remain in this version. However, we did add two additional sections to cover what you wanted about evaluation protocol and performance metrics. Those are added below.
+
+\subsection{XGBoost}
+
+XGBoost builds up an additive model incrementally; at each iteration, the next tree is fit to minimize the negative gradient of the loss function:
+
+\begin{equation}
+\hat{y}_i^{(m)}=\hat{y}_i^{(m-1)}+\eta f_m(x_i),
+\label{eq:xgb_update}
+\end{equation}
+with $\eta$ being the learning rate (the step-shrinkage factor) and $f_m$ being the m-th tree. Each tree is fit to minimize a second order Taylor expansion of the regularized objective function:
+
+\begin{equation}
+\mathcal{L}^{(m)}=\sum_{i=1}^{n}\big[g_if_m(x_i)+\frac12 h_if_m(x_i)^2\big]+\gamma T+\frac{\lambda}{2}\|w\|^2,
+\label{eq:xgb_obj}
+\end{equation}
+with $g_i=\frac{\partial}{\partial\hat y}\ell(y_i,\hat y_i)$ and $h_i=\frac{\partial^2}{\partial\hat y}\ell(y_i,\hat y_i)$ being the first and second derivatives of the loss function w.r.t. the predictions, and $T$ being the number of leaves, and $w$ being the leaf weights.
+
+\subsection{LightGBM}
+
+LightGBM uses a \emph{leaf-wise} (or best-first) approach when building trees. At each level of recursion, LightGBM selects the leaf node which provides the most improvement in loss. The improvement provided by a given split is calculated as follows:
+
+\begin{equation}
+\mathrm{Gain}=\frac{1}{2}\left[\frac{G_L^2}{H_L+\lambda}+\frac{G_R^2}{H_R+\lambda}-\frac{(G_L+G_R)^2}{H_L+H_R+\lambda}\right]-\gamma,
+\label{eq:lgbm_gain}
+\end{equation}
+with $G_L=\sum_{i\in I_L}g_i$, $H_L=\sum_{i\in I_L}h_i$ being the sum of gradients and Hessians for the left subtree respectively, and similarly for the right subtree. In addition to employing a different approach for determining where to split the data than XGBoost, LightGBM also utilizes two additional techniques:
+\begin{enumerate}[topsep=0pt,leftmargin=*]
+\item \textbf{Gradient-Based One-Side Sampling (GOSS).} GOSS retains all examples with large gradients (those examples are informative for learning) and randomly subsamples a proportion of examples with small gradients (examples that do not contribute much to the gradient), thus effectively decreasing the size of the example pool (and thus computation requirements) while maintaining the effective gradient distribution.
+\item \textbf{Exclusive Feature Bundling (EFB).} EFB identifies groups of mutually exclusive sparse features (features that rarely take non-zero values at the same time) and combines them into a single feature, thereby reducing the dimensionality of the feature space without losing any information.
+\end{enumerate}
+
+\subsection{Multilayer Perceptron Classifier}
+
+The structure of our multilayer perceptron classifier is as follows:
+
+$$ x_{(74)} \xrightarrow{W_1} h_{1\,(256)} \xrightarrow{\mathrm{ReLU}} \mathrm{Drop}(0.3) \to h_{2\,(128)} \xrightarrow{\mathrm{ReLU}} \mathrm{Drop}(0.3) \to h_{3\,(64)} \xrightarrow{\mathrm{BN}} \hat{y}_{(14)} $$
+
+We train using binary cross entropy with Adam optimizer ($\eta = 10^{-3}$, $\beta_1 = 0.9$, $\beta_2 = 0.999$) with a batch size of 512 and early stop based on validation F1 score after a maximum patience of 10 epochs.
+
+\section{Evaluation Protocol and Metrics}
+
+\subsection{Cross Validation Strategy}
+
+Our hyper-parameter tuning procedure employed 5 fold stratified cross-validation on the training set. For every combination of hyper parameters, we compute the mean macro averaged F1 score across folds to determine if that combination improved upon previous combinations. After identifying those combinations that produce higher macro F1 scores than other combinations, we select that combination of hyper parameters and then retrain our model on the entire training dataset using those hyper-parameters before testing against our holdout test set.
+
+\subsection{Performance Metrics}
+
+We define precision, recall, and F1 score for class k as follows:
+
+$$ P_k = \frac{\mathrm{TP}_k}{\mathrm{TP}_k+\mathrm{FP}_k} $$
+
+$$ R_k = \frac{\mathrm{TP}_k}{\mathrm{TP}_k+\mathrm{FN}_k} $$
+
+$$ F_{1,k}= 2\cdot \frac{\mathrm{P}_k \cdot \mathrm{R}_k}{\mathrm{P}_k + \mathrm{R}_k}. $$
+
+Then we define overall macro F1 score as follows:
+
+$$ F_1^\mathrm{{macro}} = \frac{1}{K}\sum_{k=1}^KF_{1,k}, $$
+
+and ROC-AUC as follows:
+
+$$ \mathrm{ROC\text{-}AUC} = \int_0^1 \mathrm{TDR}(t)\d t. $$
+
+Note that since there are multiple attacks, we use macro averaging rather than weighted or micro averaging. Macro averaging treats each attack equally regardless of frequency, while weighted averaging would treat rarer attacks as contributing less to the total score than commoner attacks. Micro averaging would weight attacks based on frequency but would therefore give little credit to rarer attacks. Since both are unacceptable under our threat model (missing a rare attack is just as bad as missing a common attack), we chose macro averaging.
+
+\subsection{Methods for Interpretabilty}
+
+\subsubsection {SHAP}
+
+Each feature j has assigned to it a SHAP value $\phi_j$, that represents its average marginal contribution to model output over all possible subsets of features S [shone2018deep]:
+
+$$ \phi_j = \sum_{S \subset F \setminus j}\frac{|S|!\,(|F|-|S|-1)!}{|F|!}\left[f_{S \cup j}(x)-f_S(x)\right], $$
+
+Since SHAP values can be obtained directly from decision trees in polynomial time via TreeExplainer [shone2018deep], SHAP is applicable even for very large ensembles such as LightGBM.
+
+\subsubsection {LIME}
+
+LIME approximates model f locally around input instance x with an interpretable linear model g that minimizes:
+
+$$ \xi(x)=\argmin_g {\mathcal L(f,g,\pi_x)} + \Omega(g). $$
+
+Here $\pi_x(z)=\exp(-D(x,z)/(\sigma^2))$ is an exponential kernel that weighs sampling points according to their distance to x. Also, $\Omega(g)$ penalizes complexity of g (number of nonzero coefficients).
+
+Coefficients of locally linear model provide feature-level explanations for individual prediction.
+
+LIME is useful when model f is black-box (like neural network) but not necessarily complex (like decision tree).
