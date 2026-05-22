@@ -84,7 +84,7 @@ Each of the 80 features is categorized into five categories of semantics:
 \begin{enumerate}
 \item \textbf{Identification features:} source/destination IP addresses, source/destination ports, transport protocol identifiers (TCP/UDP/ICMP).
 \item \textbf{Characteristics of Connection:} Session duration (flow duration), total packet and byte counts in both directions, forward/backward packet transfer rates.
-\item \textbf{Descriptive Statistics:} Mean, Std Dev, Min & Max of packet arrival intervals and packet lengths in both directions.
+\item \textbf{Descriptive Statistics:} Mean, Std Dev, Min \& Max of packet arrival intervals and packet lengths in both directions.
 \item \textbf{Behavioral Attributes:} Count of Connections to Same Destination Host/Port, Ratio of Inbound to Outbound Bytes, Counts of TCP Flags (SYN, ACK, RST, PSH).
 \item \textbf{Label:} BENIGN for Normal Traffic; Named Attack Category Otherwise.
 \end{enumerate}
@@ -105,7 +105,7 @@ Normalization
 
 \subsubsection{Standardizing Using Z-Scores }
 
-Z-Score normalization was applied to all numeric attributes. Parameters defining the z-score transformation ($\mu$ & $\sigma$) were determined using only the training partition and subsequently applied identically to both validation and testing partitions; as is common practice to prevent leakage of information from the held-out data into the model. The definition of z-score normalization is:
+Z-Score normalization was applied to all numeric attributes. Parameters defining the z-score transformation ($\mu$ \& $\sigma$) were determined using only the training partition and subsequently applied identically to both validation and testing partitions; as is common practice to prevent leakage of information from the held-out data into the model. The definition of z-score normalization is:
 \begin{equation}
 z_{i}=\dfrac{x_{i}-\mu}{\sigma}
 \label{eq:zscore}
@@ -293,7 +293,7 @@ Since SHAP values can be obtained directly from decision trees in polynomial tim
 
 LIME approximates model f locally around input instance x with an interpretable linear model g that minimizes:
 
-$$ \xi(x)=\argmin_g {\mathcal L(f,g,\pi_x)} + \Omega(g). $$
+$$ \xi(x)=\operatorname*{arg\,min}_g {\mathcal L(f,g,\pi_x)} + \Omega(g). $$
 
 Here $\pi_x(z)=\exp(-D(x,z)/(\sigma^2))$ is an exponential kernel that weighs sampling points according to their distance to x. Also, $\Omega(g)$ penalizes complexity of g (number of nonzero coefficients).
 
