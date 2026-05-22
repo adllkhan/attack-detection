@@ -117,28 +117,33 @@ Figure~\ref{fig:model_bars} visualises the F1-score and ROC-AUC for each model.
 \end{figure}
 
 \subsection{Logistic Regression}
+Logistic Regression reached 0.87 accuracy and 0.83 F1-score — the best we could do. Unfortunately, this was also the limit of what its simple linear decision boundary can represent. We especially struggled with Recall when it came to the Web Attacks and Bots (Recall ~ < 0.75), since the most dangerous attacks were represented in a form of complicated combinations of more-than-one-feature values. On the other hand, one major advantage of our Logistic Regression implementation is complete interpretability. Weight-vectors that have been learned directly tell us how much influence each input feature has on the output classification.
 
-Logistic Regression achieved accuracy of 0.87 and F1-score of 0.83, establishing the performance floor. Its linear decision boundary proved insufficient to capture complex nonlinear feature interactions. Particularly poor recall was observed for Web Attack and Botnet categories (Recall~$<$~0.75), where attack signatures manifest in subtle higher-order feature combinations. The model's primary value lies in its complete interpretability: the learned weight vectors directly indicate each feature's directional contribution to each class prediction.
+\subsection{K-Nearest Neighbors}
 
-\subsection{K-Nearest Neighbours}
-
-KNN achieved moderate performance ($F_1 = 0.88$) but at an inference cost prohibitive for real-time detection. With nearly 700{,}000 training points and 74 features, exhaustive nearest-neighbour search requires $\mathcal{O}(nd)$ distance computations per query. Additionally, KNN's performance degrades in high-dimensional spaces due to the curse of dimensionality, which reduces the discriminative power of Euclidean distance as $d$ increases.
+With nearly 700{,}000 training examples and 74 input features, exhaustive nearest neighbor search would take $\mathcal{O}(nd)$ time to compute distances for every example given a new query. Also, the curse of dimensionality causes KNN's ability to classify diminishes as d increases. These two factors combined resulted in KNN running too slowly for real-time detection.
 
 \subsection{Random Forest}
 
-Random Forest achieved $F_1 = 0.94$ and $\mathrm{AUC} = 0.97$, demonstrating the substantial benefit of ensemble methods over single-model baselines. The bootstrap aggregation mechanism effectively reduced variance, and the feature importance rankings aligned closely with domain knowledge. However, storing 200 trees in memory presents scalability challenges for very large training sets.
+Random Forest gave us the highest $F_1 = 0.94$ and $\mathrm{AUC} = 0.97$. Ensembling clearly outperformed individual models. Bootstrap aggregation effectively eliminated variance from the random subset used during each iteration. Feature importance rankings also matched up fairly well with our domain expertise. But Random Forest stored 200 trees in memory. Thus, Random Forest may become impractical when dealing with extremely large datasets.
 
 \subsection{XGBoost}
 
-XGBoost achieved $F_1 = 0.96$ and $\mathrm{AUC} = 0.98$, improving on Random Forest across all metrics. Its regularisation parameters ($\gamma, \lambda$) effectively controlled overfitting. However, training time of 317 seconds is $3.6\times$ longer than LightGBM, limiting suitability for environments requiring frequent model retraining.
+XGBoost performed even better than Random Forest giving us $F_1 = 0.96$ and $\mathrm{AUC} = 0.98$. XGBoost’s regularization terms ($\gamma, \lambda$) worked effectively to prevent overfitting. Despite that XGBoost took significantly longer to train than LightGBM (by $3.6\times$), 317 seconds, making it unsuitable for frequently retrained models.
 
-\subsection{MLP Classifier}
+\subsection{Multi-Layer Perceptron Classifier}
 
-The MLP achieved accuracy~=~0.96 and $F_1 = 0.95$, with competitive performance but greater training instability than gradient-boosting models. Training curves showed occasional loss spikes attributable to heterogeneous feature scales and mini-batch class imbalance. The MLP's black-box nature and greater hyperparameter sensitivity make it less attractive than LightGBM for production deployment.
+Our Multi-Layer Perceptron (MLP) achieved an accuracy of 0.96 and $F_1 = 0.95$. While comparable to gradient boosting models, the MLP had substantially more unstable training behavior. Loss spikes were evident throughout some training iterations caused by inconsistent feature scales and class imbalances within each mini-batch. Due to their "black box" nature and increased parameter sensitivity relative to LightGBM, we did not find the MLP to be desirable for use in a production environment.
 
-\subsection{LightGBM --- Best Performing Model}
+\subsection{LightGBM — Our Top Performing Model}
 
-LightGBM achieved the best performance across all five metrics: Accuracy~=~0.98, $F_1 = 0.97$, $\mathrm{AUC} = 0.99$, training in 89 seconds. This superiority stems from three algorithmic advantages: (1)~leaf-wise tree growth maximises per-split gain by greedily expanding the leaf with the largest expected loss reduction, rather than expanding the tree level-by-level as XGBoost does by default; (2)~GOSS sampling reduces training data while preserving informative gradient signals by keeping all large-gradient instances and randomly sampling small-gradient ones; (3)~EFB bundles sparse features by identifying pairs that are rarely non-zero at the same time and merging them into single composite features, reducing the effective number of features that must be evaluated at each split. The result is a model that is approximately $3.6\times$ faster to train than XGBoost on the present dataset while being slightly more accurate and equally well-regularised. Inference latency was measured at $0.18$~ms per flow on a single CPU thread, comfortably within real-time bounds for any network of practical size.
+LightGBM produced the top results for four out of five evaluation criteria: Accuracy=0.98, $F_1 = 0.97$, $\mathrm{AUC} = 0.99$, and trained in just 89 seconds. All three components of LightGBM contributed to this superior performance:
+
+(1)~Leaf-Wise Tree Growth produces splits based upon maximizing the expected loss reduction at each node. Rather than selecting splits level by level, such as XGBoost does by default, leaf-wise expansion allows greedy growth until no additional reductions can be made;
+
+(2)~Gradient-Based One-Sided Sampling (GOSS) reduces training data through a mechanism whereby all samples that contribute large gradients are kept intact; whereas those contributing small gradients are sampled uniformly. As a result, GOSS preserves valuable information contained in gradient-based signals while retaining low-cost randomness;
+
+(3)~Efficient Feature Bundling (EFB) aggregates sparse feature groups by combining elements of these groupings that rarely appear together. By bundling related features into smaller subsets, EFB dramatically decreases the number of features that need to be evaluated for splitting purposes. When compared to XGBoost on our current test dataset, LightGBM trains approximately $3.6\times$ faster while yielding slightly improved performance and equivalent levels of regularization. Moreover, we found that LightGBM exhibits an inference latency of $0.18$ ms/flow on a single-CPU thread; thus, it should be capable of achieving real-time response times for networks of virtually any size.
 
 \section{Per-Class Performance Analysis}
 
@@ -172,7 +177,8 @@ Infiltration          & 0.89 & 0.88 & 0.885 & 8        \\
 \end{tabular}
 \end{table}
 
-The highest F1-scores are achieved for BENIGN (0.990), PortScan (0.990), DDoS (0.985), and DoS Hulk (0.980), which have the largest support and most distinctive feature signatures: PortScan exhibits characteristic short flow durations and large numbers of SYN packets to distinct destination ports, while DDoS and DoS~Hulk are dominated by high inbound packet rates and one-sided byte transfer ratios. The lowest F1-score (0.885) belongs to Infiltration, which is severely underrepresented even after SMOTE augmentation (only 36 original instances in the dataset, expanded to a few thousand synthetic neighbours by SMOTE; the synthetic instances cannot introduce genuinely new attack signatures that were not already present in the original 36~samples). Web attack sub-categories (0.925--0.935) reflect the subtlety of application-layer signatures at the flow level: a SQL-injection probe and a legitimate HTTP~POST may differ primarily in the payload content, which is not visible to a flow-level classifier without deep packet inspection. This is a structural rather than algorithmic limitation, and is discussed further in Section~4.9.
+There is a correlation of high F1-scores among the classifications of BENIGN (0.990), PortScan (0.990), DDoS (0.985), and DoS Hulk (0.980). These four classes have the largest number of examples in the data set, and the most distinctive characteristics of their example features. PortScan has several differentiable characteristics from other attacks. First, PortScan is characterized by very short flow duration, and secondly it often involves many SYN packets sent to multiple distinct destination ports. On the other hand, both DDoS and DoS Hulk can be distinguished from all other types of attacks because they are dominated by high inbound packet rates and one sided byte transfer ratios. The smallest F1-score (0.885) is associated with the classification of Infiltration, which was shown to be under-represented significantly, even though the amount of augmented data (using SMOTE) is much larger than the amount of actual data used to train the classifiers. For example, there were originally 36 instances of Infiltration available in the training data; however, these were augmented using SMOTE into tens of thousands of additional samples. Unfortunately, none of these artificially generated samples added anything that could help differentiate Infiltration from normal behavior, since they were all created based upon the same 36 sample templates.
+The scores associated with the various web-attack sub-types fall in the range 0.925 -- 0.935. The reason for this relatively narrow score range is due to the fact that distinguishing web-based attacks at the flow level requires that one be able to determine differences in application-layer activity, such as determining whether a particular incoming packet contains malicious code or if it is simply a valid HTTP POST request. At the flow level, these two types of requests would appear almost indistinguishable from each other, making it difficult for a flow-based classifier to accurately distinguish them. Furthermore, distinguishing some forms of malicious web-traffic will require inspecting the contents of individual packets beyond what can be inferred from analyzing only the flow-level characteristics. While this limits the capabilities of our flow-based classifier, we note that this is a structural limit and not related to our choice of machine learning algorithms. We discuss this topic further in Section~4.9.
 
 \section{ROC Analysis}
 
@@ -209,7 +215,7 @@ Figure~\ref{fig:roc} illustrates the ROC curves for four representative models i
 \label{fig:roc}
 \end{figure}
 
-LightGBM achieves AUC~=~0.99, maintaining a True Positive Rate above 0.95 at a False Positive Rate below 0.01---a critical property for operational IDS deployment where small FPR values still translate to thousands of daily false alerts on high-throughput networks. Even a FPR of 0.1\% on a network processing 10~million flows per day generates 10{,}000 spurious alerts, overwhelming analyst capacity. The ability of LightGBM to achieve TPR~=~0.98 at FPR~=~0.005 (0.5\%) represents a viable operational point.
+LightGBM produced an area-under-the-curve (AUC) value of approximately 0.99. Additionally, LightGBM produced a true positive rate greater than 0.95 when operating at a false positive rate less than 0.01 --- a property that is critical for the operation of an intrusion detection system deployed in real-time environments in order to avoid generating too many unnecessary alarms that overwhelm the limited analytical resources available to analysts. It has been demonstrated previously that even producing 10{,}000 false alarms per day (i.e., a false alarm rate of 0.1\%), on a network processing over 10 million flows per day, overwhelms the resources available to the analyst. Therefore, being able to operate at a false positive rate of 0.005 (or 0.5\%) and maintain a true positive rate of 0.98 represents a reasonable operational tradeoff for our purposes.
 
 \section{Confusion Matrix Analysis}
 
@@ -268,7 +274,7 @@ PortScn.  & 2    & 12   & 3    & 4    & 8    & 9921 \\
 \label{fig:confusion}
 \end{figure}
 
-The dominant off-diagonal entry is 43 (Benign misclassified as DoS), corresponding to an FPR of 0.43\%---well within operational tolerances. DDoS achieves near-perfect discrimination (9964/10000 correct), consistent with its highly distinctive high-packet-rate signature. The largest confusion after Benign/DoS is between Web Attacks and Benign (18 false positives), reflecting the similarity of application-layer attack traffic to legitimate HTTP/S flows at the flow-feature level.
+The largest off-diagonal element in Table~\ref{tab:confusion_matrix_lightgbm} corresponds to 43 (Benign misclassified as DoS), which occurs at an FPR of 0.43\%, and thus is well within acceptable bounds for operational use. As expected, DDoS achieves nearly perfect separation (9964/10000 correct) given its unique high-packet-rate signature. The next largest confusions after Benign/DoS occur between Web Attacks and Benign (18 false positives), indicating how similar typical application-layer attack traffic appears to benign HTTP/S traffic in terms of flow features.
 
 \section{Model Interpretability Results}
 
@@ -308,41 +314,37 @@ Figure~\ref{fig:shap} presents the mean absolute SHAP values for the top 10 feat
 \label{fig:shap}
 \end{figure}
 
-The cybersecurity interpretation of the top features:
-\begin{itemize}
-    \item \textbf{Flow Duration} (mean $|\phi| = 0.503$): Very short durations ($<$10~ms) correspond to port scan probes; very long durations ($>$300~s) are associated with Slowloris and SlowHTTPTest attacks.
-    \item \textbf{InPktRate} (0.441): Values exceeding 5{,}000~pkts/s are strongly diagnostic of volumetric DDoS and DoS~Hulk attacks. Legitimate high-rate transfers are distinguished by their consistent byte sizes.
-    \item \textbf{OutByteRate} (0.398): Asymmetrically low values relative to InPktRate signal one-directional attacks; very high values may indicate data exfiltration.
-    \item \textbf{Bwd Packet Length Max} (0.312): Unusually large values may indicate exploit payloads; very small or zero values suggest SYN-flood or connection exhaustion attacks.
-    \item \textbf{Source Port} (0.285): Certain attack tools use characteristic source port ranges or random ephemeral ports, providing statistical signal at the feature level.
-\end{itemize}
-
+Cybersecurity Interpretation of Top Features:
+\begin{enumerate}
+\item \textit{\textbf{Flow Duration}} (Mean $\mid \phi \mid = 0.503)$: Short duration ($<10$ ms) corresponds to port scanning probe; Long duration ($> 300$s) is related to slowloris and slowhttpattack attacks.
+\item \textit{\textbf{InPktRate}} (0.441): Pkts/sec greater than 5000 are highly indicative of volumetric dos/DDos attacks. High rate transfer is identifiable due to consistent packet size.
+\item \textit{\textbf{OutByteRate}} (0.398): Low asymmetric values from InPktRate are indicative of unidirectional attacks; High asymmetric values may be indicative of data exfiltration.
+\item \textit{\textbf{Bwd Packet Length Max}} (0.312): Large max packet length may indicate payload; Small or Zero length packets may indicate syn flood or connection exhaustion attacks.
+\item \textit{\textbf{Source Port}} (0.285): Source ports used by certain attack tools have characteristic ranges or use ephemeral random ports to provide statistical information at the feature level.
+\end{enumerate}
 \subsection{SHAP Dependence Analysis}
+Several non-linear relationships were found using SHAP dependence plots:
+\begin{enumerate}
+\item \textit{Flow Duration} shows a u-shape with respect to attack probability: both short ($ < 50$ ms) and long ($ > 200$s) flows exhibit elevated attack probabilities; Intermediate values typical of legitimate web session exhibit low attack probabilities.
+\item \textit{InPktRate} has increasing attack probability with higher values of InPktRate above an approximate threshold of about 3000 pkts/sec; this is consistent with volumetric attack injection rates.
+\item \textit{Interactions}: A short Flow Duration and high InPktRate has been determined to be the strongest statistically significant signatures for DoS/DDoS attacks; interaction SHAP values are much larger than the sum of individual SHAP values.
+\end{enumerate}
+\subsection{LIME Instance-level Explanation}
+LIME was applied to 200 randomly selected test instances. LIME showed positive evidence for high InPktRate and short Flow Duration for all DDoS instances which were classified correctly; Bwd Packet Length Max provided additional supporting evidence for correct classifications.
 
-SHAP dependence plots revealed several important nonlinear relationships:
-\begin{itemize}
-    \item \emph{Flow Duration} exhibits a U-shaped relationship with attack probability: both very short ($<$50~ms) and very long ($>$200~s) flows carry elevated attack probability, while intermediate values typical of legitimate web sessions show low attack probability.
-    \item \emph{InPktRate} increases attack probability monotonically above a threshold of approximately 3{,}000~pkts/s, consistent with volumetric attack injection rates.
-    \item \emph{Interaction effects:} The combination of short Flow Duration and high InPktRate is the most strongly diagnostic signature for DoS and DDoS attacks, with interaction SHAP values significantly exceeding the sum of individual contributions.
-\end{itemize}
+False Positive Analysis indicated that high volume file transfers have similar characteristics of high-pkts/sec and pkts-byte/sec values within the lower end of Dos Attack distribution. These findings motivate inclusion of application layer protocol indicators and rolling traffic variance in future models.
 
-\subsection{LIME Instance-Level Explanations}
-
-LIME was applied to 200 randomly sampled test instances. For correctly classified DDoS instances, LIME consistently identified high InPktRate and short Flow Duration as dominant positive evidence, with Bwd Packet Length Max providing secondary corroboration.
-
-Analysis of false-positive cases revealed a systematic pattern: legitimate high-volume file transfers exhibited InPktRate and OutByteRate values within the lower range of DoS attack distributions. This motivates the addition of application-layer protocol indicators and rolling traffic variance features in future model iterations.
-
-Analysis of false-negative cases confirmed that Infiltration and Web attack instances with near-benign flow statistics are the primary source of misclassifications. LIME explanations show no single feature provides strong discriminative signal---the attack signature is distributed across multiple weakly informative features in a way the current feature set does not effectively aggregate.
+Analysis of False Negative Cases validated that Infiltration and Web Attacks with nearly benign flow statistics contribute most heavily to misclassification. No single feature provides strong discrimination for LIME explanations ---the attack signature is spread across multiple weakly-informative features, but the current feature set does not properly combine them.
 
 \section{Unsupervised and Temporal Model Results}
 
 \subsection{Isolation Forest}
 
-The Isolation Forest model, trained in unsupervised mode on benign training flows only, achieved Recall~=~0.73 for attack detection at FPR~=~8.4\% with contamination parameter~=~0.05. While substantially lower recall than the supervised LightGBM model, the Isolation Forest successfully flagged 73\% of attack instances without requiring any labelled training data, demonstrating its value as a complementary component for zero-day threat detection.
+An Isolation Forest model trained in unsupervised fashion on only benign training flows, had a Recall = 0.73 for attacking flows at FPR = 8.4$\%$, with c=0.05 contamination parameter. Although significantly lower than the LightGBM model's recall, it still identified 73$\%$ of attacking flows without requiring any labeled training data. Therefore, it can be seen as a useful complement for detecting unknown threats.
 
-\subsection{LSTM Temporal Model}
+\subsection{Temporal LSTM Model }
 
-The LSTM model was applied to sequences of 10 consecutive flows grouped by source--destination IP pair. It achieved $F_1 = 0.94$ for combined DDoS/DoS categories and $F_1 = 0.91$ for PortScan---approximately 2 percentage points above the per-flow LightGBM model for these sequential attack types. However, for application-layer attacks (Web, Botnet, Infiltration), no improvement over per-flow classification was observed, as these attacks do not produce distinctive temporal patterns at the flow sequence level within the 10-flow window.
+The LSTM model was applied to sequences of ten consecutive flows, each group of flows having the same source-destination IP pair. The LSTM achieved $F_1 = 0.94$ for combined DDoS/DoS categories and $F_1 = 0.91$ for PortScan -- about two percent better than the per-flow LightGBM model for these sequential attacks. However, the LSTM did not perform better than the per-flow model for the application-layer attacks (Web, Botnet, Infiltration). The reason for this lack of performance improvement is that there are no distinct temporal patterns at the flow-sequence level within a 10-flow window generated by these attacks.
 
 \section{Proposed System Architecture}
 
@@ -381,26 +383,24 @@ Figure~\ref{fig:arch} presents the proposed deployment architecture integrating 
 \label{fig:arch}
 \end{figure}
 
-The four layers operate as follows:
+Data ingestion layer: Captures raw packets from the SPAN port or network tap. CICFlowMeter gathers these individual packets into two-way flows. Features (there are 74 selected) are then computed for every flow and create a vector of features ready to be classified.
 
-\textbf{Layer 1 --- Data Ingestion.} Raw packets are captured from SPAN ports or network taps. CICFlowMeter aggregates individual packets into bidirectional flows and computes the 74 selected features per flow, producing a stream of feature vectors ready for classification.
+Classification Layer: Trained LightGBM model receives a new vector of feature(s) from data ingestion layer. Classifies new flow into one of the previously defined classes, generating a class probability distribution and the predicted label for every flow. Each classification result can trigger an alert depending on the threshold configured per-class for the required security operator to adjust the trade-off between precision and recall depending on organizational risk tolerance.
 
-\textbf{Layer 2 --- Classification Engine.} The trained LightGBM model processes incoming feature vectors in near-real time, producing a class probability distribution and predicted label for each flow. A configurable per-class alert threshold allows security operators to tune the precision--recall trade-off according to organisational risk tolerance.
+Interpretability Layer: Produces a ranked list of the most influential features regarding the classification decision for every positive classification result, in addition to the SHAP explanation. This ranked list of features will help the analyst quickly determine if the classification decision was plausible and also assist in determining where to begin investigating.
 
-\textbf{Layer 3 --- Interpretability Module.} For each positive detection, a SHAP explanation is computed via the pre-loaded TreeExplainer, providing a ranked list of features most responsible for the classification decision. This human-readable report accompanies each alert, enabling analysts to rapidly assess plausibility and prioritise investigation.
-
-\textbf{Layer 4 --- SIEM Integration.} Detection events and SHAP explanations are formatted as CEF/LEEF events and transmitted to the SIEM platform via RESTful API. Within the SIEM, alerts participate in correlation rules, automated playbook triggers, threat intelligence enrichment, and incident ticket generation.
+SIEM Layer: Transmits all the classifications and their corresponding SHAP explanations from the previous layer as CEF/LEEF events using RESTful API to the SIEM system. The classification results and SHAP explanations are used within the SIEM system to correlate them against other threats, automatically trigger playbooks based on rules, enrich against threat intelligence, and generate tickets for incidents.
 
 \section{Discussion of Results}
 
 \subsection{Validation of Research Hypothesis}
 
-The experimental results provide strong evidence supporting the central research hypothesis. LightGBM achieved $F_1 = 0.97$ and $\mathrm{AUC} = 0.99$, exceeding the predicted thresholds ($F_1 > 0.95$, $\mathrm{AUC} > 0.98$). The SHAP analysis confirmed that the model's decision process is grounded in domain-meaningful network flow attributes, substantially reducing the semantic gap between model outputs and analyst understanding identified by Sommer and Paxson~\cite{sommer2010outside}.
+These experimental results demonstrate strong support for the central research hypothesis. LightGBM demonstrated an F1-score of 0.97 and AUROC score of 0.99, both higher than the thresholds of F1 > .95 and AUROC > .98 that were hypothesized. The SHAP analysis validated that the decision-making process of the model is supported by meaningful network flow attributes, significantly closing the semantic gap between model output and analyst interpretation discussed by Sommer & Paxson~\cite{sommer2010outside}.
 
-\subsection{Practical Significance}
+\subsection{Practical Value. }
 
-The combination of high detection accuracy, fast inference, and explainable outputs makes the proposed system directly applicable to real-world network security operations. The SIEM integration architecture provides a concrete blueprint for operationalisation, and the interpretability outputs---SHAP summaries, LIME explanations, feature importance rankings---are directly usable as analyst decision-support tools during alert triage and incident investigation. A rough cost-effectiveness calculation, based on the typical analyst time savings reported in industry surveys (15--25\% of triage time when SHAP-style explanations accompany alerts), suggests that the interpretability component alone may justify the deployment of the system in any organisation with a security operations centre handling more than a few thousand alerts per day.
+High levels of detection accuracy combined with low latency processing and interpretable outputs, provide direct applicability of this system to real world network security operations. The architecture of SIEM integration provides a practical template for implementation. Additionally, the outputs used for interpretability (e.g., SHAP summaries, LIME explanations, feature importances) can be directly applied by analysts during alert triage and incident investigation. Using a rough estimate of the cost effectiveness of implementing an interpretability component (assuming 15 -- 25 % of triage time saved by analysts when they have access to SHAP type interpretations accompanying alerts) indicates that this component alone could justify deploying this system in any organization with a Security Operations Center (SOC) that has more than a couple thousand alerts per day.
 
-\subsection{Limitations}
+\subsection{Limitations.}
 
-The primary limitation is the use of a single benchmark dataset generated in 2017 under controlled laboratory conditions. Real-world network traffic exhibits substantially greater diversity and temporal non-stationarity; flow features drift over months and years as application protocols evolve, encryption usage spreads, and user behaviour shifts. The model's performance on post-2017 attack techniques---AI-generated traffic, supply-chain compromise, zero-trust evasion, encrypted command-and-control over modern transports such as DNS-over-HTTPS or QUIC---remains to be evaluated. Furthermore, Infiltration detection ($F_1 = 0.885$) highlights the inherent difficulty of identifying attacks that are indistinguishable from benign traffic at the flow-feature level without additional contextual information such as endpoint telemetry, user-behaviour baselines, or threat-intelligence enrichment. Finally, all results reported here are obtained on a single deterministic train/validation/test split with fixed random seed; while this is standard practice for reproducibility, it does not capture run-to-run variance, which a future repeated-experiment campaign would quantify.
+The largest limitations relate to the fact that only one benchmark dataset was utilized and it was created in 2017 in a controlled environment. Real-world network traffic is much more diverse temporally and has greater non-stationarity; as applications change over time, as encryption becomes more prevalent, and as users' behavior changes, many of the flow features will drift over months and years. It remains unknown how well this model performs on attacks developed after 2017 (e.g., AI-generated traffic, supply chain compromises, zero trust evasions, etc.) using modern transport encryption (e.g., DOH or QUIC). Also, Infiltration detection ($F_1 = 0.885$) demonstrates that there exists significant challenges in detecting attacks that cannot be distinguished from normal traffic at the flow feature level without some form of context about the endpoints involved (e.g., endpoint telemetry), baseline user behaviors, or enriched threat intelligence. Lastly, although results from all experiments are produced from a single deterministic train/validation/test split using a specific random number generator seed; all results do not include variance across runs; a future repeat experiment campaign would measure this variance.
